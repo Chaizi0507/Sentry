@@ -70,18 +70,15 @@ void UART_Init(UART_HandleTypeDef *huart, UART_Call_Back Callback_Function, uint
     }
     else if (huart->Instance == UART5)
     {
+        // UART5_Manage_Object.UART_Handler = huart;
+        // UART5_Manage_Object.Callback_Function = Callback_Function;
+        // UART5_Manage_Object.Rx_Buffer_Length = Rx_Buffer_Length;
+        // extern uint8_t RxBuff[18];
+        // HAL_UART_Receive_IT(huart, RxBuff, 1);
         UART5_Manage_Object.UART_Handler = huart;
         UART5_Manage_Object.Callback_Function = Callback_Function;
         UART5_Manage_Object.Rx_Buffer_Length = Rx_Buffer_Length;
-        //HAL_UARTEx_ReceiveToIdle_DMA(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length);
-        //USART_RxDMA_MultiBufferStart(huart, (uint32_t *)&(huart5.Instance->RDR), (uint32_t *)UART5_Manage_Object.Rx_Buffer, (uint32_t *)UART5_Manage_Object.Rx_Buffer, Rx_Buffer_Length);
-//				HAL_UARTEx_ReceiveToIdle_DMA(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length);
-			//__HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
-				//HAL_UART_Receive_IT(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length);
-//			 __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE); 
-//			__HAL_UART_ENABLE_IT(huart, UART_IT_ERR);
-			extern uint8_t RxBuff[18];
-			HAL_UART_Receive_IT(huart, RxBuff, 1);
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length*2);
     }
     else if (huart->Instance == UART7)
     {
@@ -146,43 +143,12 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     }
     else if (huart->Instance == UART5)
     {
-//        UART5_Manage_Object.Rx_Length = Size;
-//        // UART5_Manage_Object.Callback_Function(UART5_Manage_Object.Rx_Buffer, Size);
-//        // HAL_UARTEx_ReceiveToIdle_DMA(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length);
-//				//__HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
-//        if(((((DMA_Stream_TypeDef  *)huart->hdmarx->Instance)->CR) & DMA_SxCR_CT ) == RESET)
-//        {
-//                    //Disable DMA 
-//                    __HAL_DMA_DISABLE(huart->hdmarx);
-
-//                    ((DMA_Stream_TypeDef  *)huart->hdmarx->Instance)->CR |= DMA_SxCR_CT;
-//            /* reset the receive count */
-//            __HAL_DMA_SET_COUNTER(huart->hdmarx,36U);
-
-//            if(Size == 18U)
-//            {
-//                //SBUS_TO_RC(SBUS_MultiRx_Buf[0],&Remote_Ctrl);
-//                UART5_Manage_Object.Callback_Function(UART5_Manage_Object.Rx_Buffer, 18);
-//            }
-//        }
-//        /* Current memory buffer used is Memory 1 */
-//        else
-//        {
-//                    //Disable DMA 
-//                    __HAL_DMA_DISABLE(huart->hdmarx);
-//                
-//            ((DMA_Stream_TypeDef  *)huart->hdmarx->Instance)->CR &= ~(DMA_SxCR_CT);
-//                
-//            /* reset the receive count */
-//            __HAL_DMA_SET_COUNTER(huart->hdmarx,36U);
-
-//            if(Size == 18U)
-//            {
-//                //SBUS_TO_RC(SBUS_MultiRx_Buf[1],&Remote_Ctrl);
-//                UART5_Manage_Object.Callback_Function(UART5_Manage_Object.Rx_Buffer, 18);
-//            }
-//            }
-
+        UART5_Manage_Object.Rx_Length = Size;              
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length*2);
+        if( UART5_Manage_Object.Rx_Length<=UART5_Manage_Object.Rx_Buffer_Length)
+            UART5_Manage_Object.Callback_Function(UART5_Manage_Object.Rx_Buffer, Size);
+        else
+        memset( UART5_Manage_Object.Rx_Buffer, 0, UART5_Manage_Object.Rx_Buffer_Length);
     }
     else if (huart->Instance == UART7)
     {
@@ -198,45 +164,17 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         HAL_UARTEx_ReceiveToIdle_DMA(huart, UART10_Manage_Object.Rx_Buffer, UART10_Manage_Object.Rx_Buffer_Length);
 				//__HAL_DMA_DISABLE_IT(&hdma_usart6_rx, DMA_IT_HT);
     }
-//    huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;
-//	
-//	 huart->RxEventType = HAL_UART_RXEVENT_TC;
-
-//    /* Enalbe IDLE interrupt */
-//    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
-//        
-//    /* Enable the DMA transfer for the receiver request */
-//    SET_BIT(huart->Instance->CR3, USART_CR3_DMAR);
-//        
-//    /* Enable DMA */
-//    __HAL_DMA_ENABLE(huart->hdmarx);    
 }
 
-uint8_t index = 0;
-volatile uint32_t now_time;
-volatile uint32_t last_time;
-uint64_t stop_time = 60000;
-uint32_t derta_time;
-uint8_t over = 0;
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if (huart->Instance == UART5)
-	{
-		extern uint8_t DataBuffer[18];
-		extern uint8_t RxBuff[18];
-		DataBuffer[index] = RxBuff[0];
-		HAL_UART_Receive_IT(huart, RxBuff, 1);
-		now_time = DWT->CYCCNT;
-		index++;
-		derta_time = now_time-last_time;
-		if(derta_time> stop_time)
-		{
-			index = 0;
-		}		
-			if(index>18)  over =1;
-		last_time = now_time;
-	}	
-}
 
+
+// void HAL_UART_ErrorCallback(UART_HandleTypeDef * huart)
+// {
+// 	if(huart->Instance == UART5)
+// 	{
+// 		 HAL_UARTEx_ReceiveToIdle_DMA(&huart5, UART5_Manage_Object.Rx_Buffer, UART5_Manage_Object.Rx_Buffer_Length*2);
+// 		memset( UART5_Manage_Object.Rx_Buffer, 0, UART5_Manage_Object.Rx_Buffer_Length);							   // 清除接收缓存		
+// 	}
+// }
 
 /************************ COPYRIGHT(C) USTC-ROBOWALKER **************************/
