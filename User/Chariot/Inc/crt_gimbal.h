@@ -166,12 +166,12 @@ protected:
     //常量
 
     // 重力补偿
-float Gravity_Compensate = 0.0f;
+    float Gravity_Compensate = 0.0f;
 
     //内部变量 
-   float True_Rad_Pitch = 0.0f;
-   float True_Angle_Pitch = 0.0f;
-   float True_Gyro_Pitch = 0.0f;
+    float True_Rad_Pitch = 0.0f;
+    float True_Angle_Pitch = 0.0f;
+    float True_Gyro_Pitch = 0.0f;
     //读变量
 
     //写变量
@@ -213,25 +213,48 @@ public:
     /*后期yaw pitch这两个类要换成其父类，大疆电机类*/
 
     // yaw轴电机
-    Class_Gimbal_Yaw_Motor_GM6020 Motor_Yaw_A;
-    Class_Gimbal_Yaw_Motor_GM6020 Motor_Yaw_B;
-    Class_Gimbal_Yaw_Motor_GM6020 Motor_Main_Yaw;
+    Class_DJI_Motor_GM6020 Motor_Yaw_A;
+    Class_DJI_Motor_GM6020 Motor_Yaw_B;
+    Class_LK_Motor Motor_Main_Yaw;
 
     // pitch轴电机
-    Class_Gimbal_Pitch_Motor_GM6020 Motor_Pitch_A;
-    Class_Gimbal_Pitch_Motor_GM6020 Motor_Pitch_B;
+    Class_DJI_Motor_GM6020 Motor_Pitch_A;
+    Class_DJI_Motor_GM6020 Motor_Pitch_B;
 
     void Init();
 
     inline float Get_Target_Yaw_Angle();
-    inline float Get_Target_Pitch_Angle();
+    inline float Get_Target_Yaw_Angle_A();
+    inline float Get_Target_Yaw_Angle_B();  
+    inline float Get_Target_Pitch_Angle_A();
+    inline float Get_Target_Pitch_Angle_B();
+    inline float Get_True_Angle_Yaw_A();
+    inline float Get_True_Angle_Yaw_B();
+    inline float Get_True_Angle_Pitch_A();
+    inline float Get_True_Angle_Pitch_B();
+    inline float Get_True_Angle_Yaw_Main();
     inline Enum_Gimbal_Control_Type Get_Gimbal_Control_Type();
 
     inline void Set_Gimbal_Control_Type(Enum_Gimbal_Control_Type __Gimbal_Control_Type);
     inline void Set_Target_Yaw_Angle(float __Target_Yaw_Angle);
-    inline void Set_Target_Pitch_Angle(float __Target_Pitch_Angle);
+    inline void Set_Target_Yaw_Angle_A(float __Target_Yaw_Angle_A);
+    inline void Set_Target_Yaw_Angle_B(float __Target_Yaw_Angle_B);
+    inline void Set_Target_Pitch_Angle_A(float __Target_Pitch_Angle_A);
+    inline void Set_Target_Pitch_Angle_B(float __Target_Pitch_Angle_B);
+    inline void Set_True_Angle_Yaw_A(float __True_Angle_Yaw_A);
+    inline void Set_True_Angle_Yaw_B(float __True_Angle_Yaw_B);
+    inline void Set_True_Angle_Pitch_A(float __True_Angle_Pitch_A);
+    inline void Set_True_Angle_Pitch_B(float __True_Angle_Pitch_B);
+    inline void Set_True_Angle_Yaw_Main(float __True_Angle_Yaw_Main);
 
     void TIM_Calculate_PeriodElapsedCallback();
+    void Yaw_Angle_Transform_A();
+    void Yaw_Angle_Transform_B();
+    void Pitch_Angle_Transform_A();
+    void Pitch_Angle_Transform_B();
+    void Yaw_Angle_Transform_Main();
+    void Control_Update_Main();
+    void Control_Update(Class_DJI_Motor_GM6020 *Motor);
 
 protected:
     //初始化相关常量
@@ -252,6 +275,11 @@ protected:
     float Max_Pitch_Angle = 35.0f ; //多10°
 
     //内部变量 
+    float True_Angle_Yaw_A = 0.0f;
+    float True_Angle_Yaw_B = 0.0f;
+    float True_Angle_Pitch_A = 0.0f;
+    float True_Angle_Pitch_B = 0.0f;
+    float True_Angle_Yaw_Main = 0.0f;
 
     //读变量
 
@@ -264,8 +292,11 @@ protected:
 
     // yaw轴角度
     float Target_Yaw_Angle = 0.0f;
+    float Target_Yaw_Angle_A = 0.0f;
+    float Target_Yaw_Angle_B = 0.0f;
     // pitch轴角度
-    float Target_Pitch_Angle = 0.0f;
+    float Target_Pitch_Angle_A = 0.0f;
+    float Target_Pitch_Angle_B = 0.0f;
 
     //内部函数
 
@@ -283,9 +314,24 @@ protected:
  *
  * @return float yaw轴角度
  */
+float Class_Gimbal::Get_Target_Yaw_Angle_A()
+{
+    return (Target_Yaw_Angle_A);
+}
+
+/**
+ * @brief 获取yaw轴角度
+ *
+ * @return float yaw轴角度
+ */
 float Class_Gimbal::Get_Target_Yaw_Angle()
 {
     return (Target_Yaw_Angle);
+}
+
+float Class_Gimbal::Get_Target_Yaw_Angle_B()
+{
+    return (Target_Yaw_Angle_B);
 }
 
 /**
@@ -293,9 +339,39 @@ float Class_Gimbal::Get_Target_Yaw_Angle()
  *
  * @return float pitch轴角度
  */
-float Class_Gimbal::Get_Target_Pitch_Angle()
+float Class_Gimbal::Get_Target_Pitch_Angle_A()
 {
-    return (Target_Pitch_Angle);
+    return (Target_Pitch_Angle_A);
+}
+
+float Class_Gimbal::Get_Target_Pitch_Angle_B()
+{
+    return (Target_Pitch_Angle_B);
+}
+
+float Class_Gimbal::Get_True_Angle_Yaw_A()
+{
+    return (True_Angle_Yaw_A);
+}
+
+float Class_Gimbal::Get_True_Angle_Yaw_B()
+{
+    return (True_Angle_Yaw_B);
+}
+
+float Class_Gimbal::Get_True_Angle_Pitch_A()
+{
+    return (True_Angle_Pitch_A);
+}
+
+float Class_Gimbal::Get_True_Angle_Pitch_B()
+{
+    return (True_Angle_Pitch_B);
+}
+
+float Class_Gimbal::Get_True_Angle_Yaw_Main()
+{
+    return (True_Angle_Yaw_Main);
 }
 
 /**
@@ -322,6 +398,20 @@ void Class_Gimbal::Set_Gimbal_Control_Type(Enum_Gimbal_Control_Type __Gimbal_Con
  * @brief 设定yaw轴角度
  *
  */
+void Class_Gimbal::Set_Target_Yaw_Angle_A(float __Target_Yaw_Angle_A)
+{
+    Target_Yaw_Angle_A = __Target_Yaw_Angle_A;
+}
+
+void Class_Gimbal::Set_Target_Yaw_Angle_B(float __Target_Yaw_Angle_B)
+{
+    Target_Yaw_Angle_B = __Target_Yaw_Angle_B;
+}   
+
+/**
+ * @brief 设定yaw轴角度
+ *
+ */
 void Class_Gimbal::Set_Target_Yaw_Angle(float __Target_Yaw_Angle)
 {
     Target_Yaw_Angle = __Target_Yaw_Angle;
@@ -331,12 +421,40 @@ void Class_Gimbal::Set_Target_Yaw_Angle(float __Target_Yaw_Angle)
  * @brief 设定pitch轴角度
  *
  */
-void Class_Gimbal::Set_Target_Pitch_Angle(float __Target_Pitch_Angle)
+void Class_Gimbal::Set_Target_Pitch_Angle_A(float __Target_Pitch_Angle_A)
 {
-    Target_Pitch_Angle = __Target_Pitch_Angle;
+    Target_Pitch_Angle_A = __Target_Pitch_Angle_A;
 }
 
+void Class_Gimbal::Set_Target_Pitch_Angle_B(float __Target_Pitch_Angle_B)
+{
+    Target_Pitch_Angle_B = __Target_Pitch_Angle_B;
+}
 
+void Class_Gimbal::Set_True_Angle_Yaw_Main(float __True_Angle_Yaw_Main)
+{
+    True_Angle_Yaw_Main = __True_Angle_Yaw_Main;
+}
+
+void Class_Gimbal::Set_True_Angle_Yaw_A(float __True_Angle_Yaw_A)
+{
+    True_Angle_Yaw_A = __True_Angle_Yaw_A;
+}
+
+void Class_Gimbal::Set_True_Angle_Yaw_B(float __True_Angle_Yaw_B)   
+{
+    True_Angle_Yaw_B = __True_Angle_Yaw_B;
+}
+
+void Class_Gimbal::Set_True_Angle_Pitch_A(float __True_Angle_Pitch_A)
+{
+    True_Angle_Pitch_A = __True_Angle_Pitch_A;
+}
+
+void Class_Gimbal::Set_True_Angle_Pitch_B(float __True_Angle_Pitch_B)
+{
+    True_Angle_Pitch_B = __True_Angle_Pitch_B;
+}
 #endif
 
 /************************ COPYRIGHT(C) USTC-ROBOWALKER **************************/

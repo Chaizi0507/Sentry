@@ -15,9 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 /* Exported macros -----------------------------------------------------------*/
-
-//#define CHASSIS
-#define GIMBAL
+#define CHASSIS
+//#define GIMBAL
 
 
 #ifdef CHASSIS 	

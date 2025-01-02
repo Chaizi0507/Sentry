@@ -177,6 +177,10 @@ void Class_DJI_Motor_GM6020::Init(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID _
     {
         CAN_Manage_Object = &CAN2_Manage_Object;
     }
+    else if (hcan->Instance == FDCAN3)
+    {
+        CAN_Manage_Object = &CAN3_Manage_Object;
+    }
     CAN_ID = __CAN_ID;
     DJI_Motor_Control_Method = __DJI_Motor_Control_Method;
     Encoder_Offset = __Encoder_Offset;
@@ -249,11 +253,6 @@ void Class_DJI_Motor_GM6020::Data_Process()
     else
         temp_yaw = 0.0f;
     t_yaw = temp_yaw;    
-    // float temp_test;
-    // temp_test = Get_Now_Radian();
-    // temp_test = temp_test + Get_Zero_Position();
-    // if(temp_test >= 2*PI) temp_test -= 2*PI;
-    // temp_radian = temp_test;
 
 
     //存储预备信息
@@ -334,13 +333,13 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     case (DJI_Motor_Control_Method_OMEGA):
     {
         PID_Omega.Set_Target(Target_Omega_Angle);
-        PID_Omega.Set_Now(Data.Now_Omega_Angle);
+        PID_Omega.Set_Now(Transform_Omega);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 
         Target_Torque = PID_Omega.Get_Out();
 
         PID_Torque.Set_Target(Target_Torque);
-        PID_Torque.Set_Now(Data.Now_Torque);
+        PID_Torque.Set_Now(Transform_Torque);
         PID_Torque.TIM_Adjust_PeriodElapsedCallback();
 
         Out = PID_Torque.Get_Out();
@@ -349,29 +348,29 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     case (DJI_Motor_Control_Method_ANGLE):
     {
         PID_Angle.Set_Target(Target_Angle);
-        PID_Angle.Set_Now(Data.Now_Angle);
+        PID_Angle.Set_Now(Transform_Angle);//转换后的角度，右手螺旋定律，标准坐标系
         PID_Angle.TIM_Adjust_PeriodElapsedCallback();
 
         Target_Omega_Angle = PID_Angle.Get_Out();
 
         PID_Omega.Set_Target(Target_Omega_Angle);
-        PID_Omega.Set_Now(Data.Now_Omega_Angle);
+        PID_Omega.Set_Now(Transform_Omega);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 
-        Target_Torque = PID_Omega.Get_Out();
+        // Target_Torque = PID_Omega.Get_Out();
 
-        PID_Torque.Set_Target(Target_Torque);
-        PID_Torque.Set_Now(Data.Now_Torque);
-        PID_Torque.TIM_Adjust_PeriodElapsedCallback();
+        // PID_Torque.Set_Target(Target_Torque);
+        // PID_Torque.Set_Now(Transform_Torque);
+        // PID_Torque.TIM_Adjust_PeriodElapsedCallback();
 
-        Out = PID_Torque.Get_Out();
+        Out = PID_Omega.Get_Out();
     }
     break;
     case (DJI_Motor_Control_Method_AGV_MODE):
     {       
         
         PID_Angle.Set_Target(Target_Angle);
-        PID_Angle.Set_Now(t_yaw * 360.0f / 2.0f /PI);
+        PID_Angle.Set_Now(t_yaw * 180.0f /PI);
         PID_Angle.TIM_Adjust_PeriodElapsedCallback();
         
         // Target_Omega_Angle = PID_Angle.Get_Out();
