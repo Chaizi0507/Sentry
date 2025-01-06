@@ -38,12 +38,6 @@ void Class_Chariot::Init(float __DR16_Dead_Zone)
         Chassis.Referee = &Referee;
         Chassis.Init();
 
-        //底盘随动PID环初始化
-        //PID_Chassis_Fllow.Init(6.0f, 0.0f, 0.1f, 0.0f, 10.0f, 10.0f,0.0f,0.0f,0.0f,0.001f,0.01f);
-
-        //yaw电机canid初始化  只获取其编码器值用于底盘随动，并不参与控制
-        // Motor_Yaw.Init(&hfdcan2, DJI_Motor_ID_0x205);
-
     #elif defined(GIMBAL)
         
         Chassis.Set_Velocity_X_Max(4.0f);
@@ -80,6 +74,34 @@ void Class_Chariot::Init(float __DR16_Dead_Zone)
     #endif
 }
 
+
+#ifdef CHASSIS
+void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
+{
+    uint16_t Shooter_Barrel_Cooling_Value,Shooter_Barrel_Heat_Limit,HP,Self_Outpost_HP,Oppo_Outpost_HP;
+
+
+    Shooter_Barrel_Heat_Limit = Referee.Get_Booster_17mm_1_Heat_Max();
+    Shooter_Barrel_Cooling_Value = Referee.Get_Booster_17mm_1_Heat_CD();
+    HP = Referee.Get_HP();
+
+    //Self_Outpost_HP = Referee.Get_Self_Outpost_HP();
+    //Oppo_Outpost_HP = Referee.Get_Oppo_Outpost_HP();
+
+
+    //发送数据给云台
+    CAN3_Chassis_Tx_Data_A[0] = Referee.Get_Game_Stage();
+    CAN3_Chassis_Tx_Data_A[1] = Referee.Get_Remaining_Time() >> 8;
+    CAN3_Chassis_Tx_Data_A[2] = Referee.Get_Remaining_Time();
+    memcpy(CAN3_Chassis_Tx_Data_A + 3, &HP, sizeof(uint16_t));
+    // memcpy(CAN3_Chassis_Tx_Data_A + 2, &Shooter_Barrel_Heat_Limit, sizeof(uint16_t));
+    // memcpy(CAN3_Chassis_Tx_Data_A + 4, &Shooter_Barrel_Cooling_Value, sizeof(uint16_t));
+
+    
+
+}
+#endif
+
 /**
  * @brief can回调函数处理云台发来的数据
  *
@@ -96,8 +118,6 @@ void Class_Chariot::CAN_Chassis_Rx_Gimbal_Callback(uint8_t *Rx_Data)
     float chassis_omega;
     //底盘控制类型
     Enum_Chassis_Control_Type chassis_control_type;
-    //底盘和云台夹角（弧度制）
-    float derta_angle;
     //float映射到int16之后的速度
     int16_t tmp_velocity_x, tmp_velocity_y, tmp_omega, tmp_gimbal_pitch;
 
@@ -109,8 +129,7 @@ void Class_Chariot::CAN_Chassis_Rx_Gimbal_Callback(uint8_t *Rx_Data)
     
     chassis_velocity_x = Math_Int_To_Float(tmp_velocity_x,-450,450,-4,4);
     chassis_velocity_y = Math_Int_To_Float(tmp_velocity_y,-450,450,-4,4);
-    chassis_omega = Math_Int_To_Float(tmp_omega, -2000, 2000, -200.f, 200.f)/50;
-    chassis_omega = 0;
+    chassis_omega = Math_Int_To_Float(tmp_omega, -2000, 2000, -200.f, 200.f) / 50 / Chassis_Radius;//映射范围除以五十 云台发的是车体角速度 转为舵轮电机的线速度
 
     chassis_control_type = (Enum_Chassis_Control_Type)(control_type & 0x03);
     Sprint_Status = (Enum_Sprint_Status)(control_type>>2 & 0x01);
@@ -123,7 +142,7 @@ void Class_Chariot::CAN_Chassis_Rx_Gimbal_Callback(uint8_t *Rx_Data)
     //设定底盘目标速度
     Chassis.Set_Target_Velocity_X(chassis_velocity_x);
     Chassis.Set_Target_Velocity_Y(chassis_velocity_y);
-    Chassis.Set_Target_Omega(chassis_omega);
+    Chassis.Set_Target_Omega(chassis_omega);//线速度
 }
 #endif
 
@@ -131,9 +150,8 @@ void Class_Chariot::CAN_Chassis_Rx_Gimbal_Callback(uint8_t *Rx_Data)
  * @brief can回调函数处理底盘发来的数据
  *
  */
-can_rx1_t can_rx1;
-can_rx2_t can_rx2;
-can_rx3_t can_rx3;
+Referee_Rx_A_t CAN3_Chassis_Rx_Data_A;
+Referee_Rx_B_t CAN3_Chassis_Rx_Data_B;
 #ifdef GIMBAL
 
 void Class_Chariot::CAN_Gimbal_Rx_Chassis_Callback()
@@ -192,7 +210,13 @@ void Class_Chariot::CAN_Gimbal_Tx_Chassis_Callback()
     relative_angle = chassis_angle - gimbal_angle;
     test_ang = relative_angle;
     MiniPC.Set_Gimbal_Now_Relative_Angle(relative_angle);
-    relative_angle = 0;//测试用
+
+    if(MiniPC.Get_MiniPC_Status() != MiniPC_Status_DISABLE){
+        if(MiniPC.Get_Chassis_Target_Velocity_X() != 0 || MiniPC.Get_Chassis_Target_Velocity_Y() != 0){
+            chassis_velocity_x = MiniPC.Get_Chassis_Target_Velocity_X();
+            chassis_velocity_y = MiniPC.Get_Chassis_Target_Velocity_Y();
+        }
+    }
 
     volatile int Chassis_control_type = Chassis.Get_Chassis_Control_Type(); 
      switch(Chassis_control_type){
@@ -220,7 +244,7 @@ void Class_Chariot::CAN_Gimbal_Tx_Chassis_Callback()
             break;
         }
         case(Chassis_Control_Type_SPIN):{
-            chassis_omega = 3;
+            chassis_omega = 150;//符合映射规则
             chassis_velocity_x = gimbal_velocity_x * cos(relative_angle) - gimbal_velocity_y * sin(relative_angle);
             chassis_velocity_y = gimbal_velocity_x * sin(relative_angle) + gimbal_velocity_y * cos(relative_angle);
             break;
@@ -308,10 +332,6 @@ void Class_Chariot::Control_Chassis()
                     Chassis.Set_Chassis_Control_Type(Chassis_Control_Type_FLLOW);
                 }
                 break;
-                case(MiniPC_Chassis_Control_Mode_FOLLOW_SPIN):{
-                    Chassis.Set_Chassis_Control_Type(Chassis_Control_Type_FLLOW);
-                }
-                break;
                 case(MiniPC_Chassis_Control_Mode_FOLLOW):{
                     Chassis.Set_Chassis_Control_Type(Chassis_Control_Type_FLLOW);
                 }
@@ -355,7 +375,7 @@ void Class_Chariot::Transform_Mouse_Axis(){
 void Class_Chariot::Control_Gimbal()
 {
         // 角度目标值
-    float tmp_gimbal_yaw, tmp_gimbal_pitch;
+    float tmp_gimbal_yaw, tmp_gimbal_pitch_a, tmp_gimbal_pitch_b;
     // 遥控器摇杆值
     float dr16_y, dr16_r_y;
 
@@ -364,11 +384,13 @@ void Class_Chariot::Control_Gimbal()
     dr16_r_y = (Math_Abs(DR16.Get_Right_Y()) > DR16_Dead_Zone) ? DR16.Get_Right_Y() : 0;
 
     tmp_gimbal_yaw = Gimbal.Get_Target_Yaw_Angle();
-    //tmp_gimbal_pitch = Gimbal.Motor_Pitch.Get_Target_Angle();
+    tmp_gimbal_pitch_a = Gimbal.Motor_Pitch_A.Get_Target_Angle();
+    tmp_gimbal_pitch_b = Gimbal.Motor_Pitch_B.Get_Target_Angle();
 
     // 遥控器操作逻辑
     tmp_gimbal_yaw -= dr16_y * DR16_Yaw_Angle_Resolution;
-    //tmp_gimbal_pitch += dr16_r_y * DR16_Pitch_Angle_Resolution;
+    tmp_gimbal_pitch_a += dr16_r_y * DR16_Pitch_Angle_Resolution;
+    tmp_gimbal_pitch_b += dr16_r_y * DR16_Pitch_Angle_Resolution;
     // 限制角度范围 处理yaw轴180度问题
     if ((tmp_gimbal_yaw ) > 180.0f)
     {
@@ -378,6 +400,7 @@ void Class_Chariot::Control_Gimbal()
     {
         tmp_gimbal_yaw += (360.0f);
     }
+
 
     if (DR16.Get_Left_Switch() == DR16_Switch_Status_DOWN) // 左下 上位机
     {
@@ -391,7 +414,8 @@ void Class_Chariot::Control_Gimbal()
 
         // 设定角度
         Gimbal.Set_Target_Yaw_Angle(tmp_gimbal_yaw);
-        // Gimbal.Set_Target_Pitch_Angle(tmp_gimbal_pitch);
+        Gimbal.Set_Target_Pitch_Angle_A(tmp_gimbal_pitch_a);
+        Gimbal.Set_Target_Pitch_Angle_B(tmp_gimbal_pitch_b);
     }
 }
 #endif
@@ -410,22 +434,7 @@ void Class_Chariot::Control_Booster()
 }
 #endif
 
-#ifdef CHASSIS
-void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
-{
-    uint16_t Shooter_Barrel_Cooling_Value;
-    uint16_t Shooter_Barrel_Heat_Limit;
-    Shooter_Barrel_Heat_Limit = Referee.Get_Booster_17mm_1_Heat_Max();
-    Shooter_Barrel_Cooling_Value = Referee.Get_Booster_17mm_1_Heat_CD();
 
-    //发送数据给云台
-    CAN3_Chassis_Tx_Gimbal_Data[0] = Referee.Get_ID();
-    CAN3_Chassis_Tx_Gimbal_Data[1] = Referee.Get_Game_Stage();
-    memcpy(CAN3_Chassis_Tx_Gimbal_Data + 2, &Shooter_Barrel_Heat_Limit, sizeof(uint16_t));
-    memcpy(CAN3_Chassis_Tx_Gimbal_Data + 4, &Shooter_Barrel_Cooling_Value, sizeof(uint16_t));
-    
-}
-#endif
 /**
  * @brief 计算回调函数
  *

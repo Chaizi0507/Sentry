@@ -59,22 +59,22 @@ uint8_t *allocate_tx_data(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID __CAN_ID)
         break;
         case (DJI_Motor_ID_0x205):
         {
-            tmp_tx_data_ptr = &(CAN1_0x1ff_Tx_Data[0]);
+            tmp_tx_data_ptr = &(CAN1_0x1fe_Tx_Data[0]);
         }
         break;
         case (DJI_Motor_ID_0x206):
         {
-            tmp_tx_data_ptr = &(CAN1_0x1ff_Tx_Data[2]);
+            tmp_tx_data_ptr = &(CAN1_0x1fe_Tx_Data[2]);
         }
         break;
         case (DJI_Motor_ID_0x207):
         {
-            tmp_tx_data_ptr = &(CAN1_0x1ff_Tx_Data[4]);
+            tmp_tx_data_ptr = &(CAN1_0x1fe_Tx_Data[4]);
         }
         break;
         case (DJI_Motor_ID_0x208):
         {
-            tmp_tx_data_ptr = &(CAN1_0x1ff_Tx_Data[6]);
+            tmp_tx_data_ptr = &(CAN1_0x1fe_Tx_Data[6]);
         }
         break;
         case (DJI_Motor_ID_0x209):
@@ -92,6 +92,7 @@ uint8_t *allocate_tx_data(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID __CAN_ID)
             tmp_tx_data_ptr = &(CAN1_0x2ff_Tx_Data[4]);
         }
         break;
+        
         }
     }
     else if (hcan == &hfdcan2)
@@ -357,12 +358,6 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
         PID_Omega.Set_Now(Transform_Omega);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 
-        // Target_Torque = PID_Omega.Get_Out();
-
-        // PID_Torque.Set_Target(Target_Torque);
-        // PID_Torque.Set_Now(Transform_Torque);
-        // PID_Torque.TIM_Adjust_PeriodElapsedCallback();
-
         Out = PID_Omega.Get_Out();
     }
     break;
@@ -373,18 +368,11 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
         PID_Angle.Set_Now(t_yaw * 180.0f /PI);
         PID_Angle.TIM_Adjust_PeriodElapsedCallback();
         
-        // Target_Omega_Angle = PID_Angle.Get_Out();
-        Target_Omega_Angle = rpm*360.0*PID_Angle.Get_Out();;//rpm=1 360度/秒
+        Target_Omega_Angle = PID_Angle.Get_Out();;
 
-        PID_Omega.Set_Target(-Target_Omega_Angle);//逆时针速度为负，而角度逆时针为正，加负号
+        PID_Omega.Set_Target(-Target_Omega_Angle);//逆时针速度为负，而角度逆时针为正，加负号，使速度与角度方向一致
         PID_Omega.Set_Now(Data.Now_Omega_Angle);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
-
-        //Target_Torque = PID_Omega.Get_Out();
-
-        // PID_Torque.Set_Target(Target_Torque);
-        // PID_Torque.Set_Now(Data.Now_Torque);
-        // PID_Torque.TIM_Adjust_PeriodElapsedCallback();
 
         Out = PID_Omega.Get_Out();
     }
@@ -395,7 +383,6 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     }
     break;
     }
-    //Out=0.0f;//test
     Output();
 }
 
@@ -417,6 +404,10 @@ void Class_DJI_Motor_C610::Init(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID __C
     else if (hcan->Instance == FDCAN2)
     {
         CAN_Manage_Object = &CAN2_Manage_Object;
+    }
+    else if (hcan->Instance == FDCAN3)
+    {
+        CAN_Manage_Object = &CAN3_Manage_Object;
     }
     CAN_ID = __CAN_ID;
     DJI_Motor_Control_Method = __DJI_Motor_Control_Method;
@@ -589,6 +580,10 @@ void Class_DJI_Motor_C620::Init(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID __C
     else if (hcan->Instance == FDCAN2)
     {
         CAN_Manage_Object = &CAN2_Manage_Object;
+    }
+    else if (hcan->Instance == FDCAN3)
+    {
+        CAN_Manage_Object = &CAN3_Manage_Object;
     }
     CAN_ID = __CAN_ID;
     DJI_Motor_Control_Method = __DJI_Motor_Control_Method;

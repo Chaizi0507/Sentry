@@ -356,23 +356,7 @@ void Class_LK_Motor::TIM_Process_PeriodElapsedCallback()
             PID_Omega.Set_Now(Transform_Omega);
             PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 
-            Target_Current = PID_Omega.Get_Out();
-
-            Out = Target_Current+50;
-            // Direction = 1;//逆时针
-            // if(Target_Angle >= 0){
-            //     Angle = Zero_Position + Target_Angle;
-            // }
-            // else{
-            //     Angle = Zero_Position + Target_Angle;//Target已经为负
-            // }
-            // if(Angle < 0){
-            //     Angle += 360;
-            // }
-            // if(Angle > 360){
-            //     Angle -= 360;
-            // }
-            // Angle *= 100;
+            Out = PID_Omega.Get_Out();         
         }
         break;
         default:
@@ -382,6 +366,7 @@ void Class_LK_Motor::TIM_Process_PeriodElapsedCallback()
         break;
     }    
     //发送数据
+    Out = 0.f;//test
     Output();
 
 }

@@ -377,6 +377,7 @@ public:
 
     float v;
     float init_v = 0.0f;
+
 protected:
     //初始化相关变量
 
@@ -686,6 +687,7 @@ void Class_DJI_Motor_GM6020::Set_Target_Torque(float __Target_Torque)
 void Class_DJI_Motor_GM6020::Set_Out(float __Out)
 {
     Out = __Out;
+    Output();
 }
 
 /**
@@ -1152,6 +1154,7 @@ void Class_DJI_Motor_C620::Set_Target_Torque(float __Target_Torque)
 void Class_DJI_Motor_C620::Set_Out(float __Out)
 {
     Out = __Out;
+    Output();
 }
 
 #endif
