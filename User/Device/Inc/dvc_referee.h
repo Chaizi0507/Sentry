@@ -40,7 +40,7 @@ class Class_Chariot;
 #define BLUE 100
 
 //只需修改这里 UI发送者ID
-#define ROBOT_ID    (INFANTRY_3 + BLUE)
+#define ROBOT_ID    (SENTRY_7 + BLUE)
 
 const unsigned char CRC8_INIT = 0xff;
 const unsigned char CRC8_TAB[256] =

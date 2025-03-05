@@ -89,11 +89,11 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
     Motor_Steer[1].PID_Omega.Init(30.0f, 30.0f, 0.0f, 0.0f, 8000, Motor_Steer[1].Get_Output_Max());
     Motor_Steer[1].PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Steer[1].Get_Output_Max(), Motor_Steer[1].Get_Output_Max());
 
-    Motor_Steer[2].PID_Angle.Init(20.f, 0.0f, 0.0f, 0.0f, Motor_Steer[2].Get_Output_Max(), Motor_Steer[2].Get_Output_Max());//阻力可能不均匀
+    Motor_Steer[2].PID_Angle.Init(20.f, 0.0f, 0.0f, 0.0f, Motor_Steer[2].Get_Output_Max(), Motor_Steer[2].Get_Output_Max());
     Motor_Steer[2].PID_Omega.Init(30.0f, 30.0f, 0.0f, 0.0f, 8000, Motor_Steer[2].Get_Output_Max());
     Motor_Steer[2].PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Steer[2].Get_Output_Max(), Motor_Steer[2].Get_Output_Max());
 
-    Motor_Steer[3].PID_Angle.Init(20.f, 0.0f, 0.0f, 0.0f, Motor_Steer[3].Get_Output_Max(), Motor_Steer[3].Get_Output_Max());
+    Motor_Steer[3].PID_Angle.Init(15.f, 0.0f, 0.0f, 0.0f, Motor_Steer[3].Get_Output_Max(), Motor_Steer[3].Get_Output_Max());
     Motor_Steer[3].PID_Omega.Init(30.0f, 30.0f, 0.0f, 0.0f, 8000, Motor_Steer[3].Get_Output_Max());
     Motor_Steer[3].PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Steer[3].Get_Output_Max(), Motor_Steer[3].Get_Output_Max());
 

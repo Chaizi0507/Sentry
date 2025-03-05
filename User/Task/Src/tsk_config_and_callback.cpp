@@ -62,12 +62,6 @@ bool start_flag=0;
 Class_Chariot chariot;
 
 /* Private function declarations ---------------------------------------------*/
-float Deadband(float value, float lowerLimit, float upperLimit) {
-    if (value >= lowerLimit && value <= upperLimit) {
-        return 0; // 如果值在死区内，返回0
-    } 
-    else return value;    
-}
 /* Function prototypes -------------------------------------------------------*/
 
 /**
@@ -487,7 +481,7 @@ void Task1ms_TIM5_Callback()
         TIM_CAN_PeriodElapsedCallback();
         
         
-       // TIM_UART_PeriodElapsedCallback();
+        //TIM_UART_PeriodElapsedCallback();
         
         static int mod5 = 0;
         mod5++;
@@ -539,7 +533,7 @@ extern "C" void Task_Init()
         SPI_Init(&hspi2,Device_SPI2_Callback);
 
         //磁力计iic外设
-        //IIC_Init(&hi2c3, Ist8310_IIC3_Callback);    
+        //IIC_Init(&hi2c3, Ist8310_IIC3_Callback);    //达妙无磁力计
         
         //遥控器接收
         UART_Init(&huart5, DR16_UART5_Callback, 18);

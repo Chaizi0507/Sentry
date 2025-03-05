@@ -278,6 +278,8 @@ public:
     IMU_Data IMU_Data_A;
     IMU_Data IMU_Data_B;
 
+    
+
 protected:
     //初始化相关常量
     float Gimbal_Head_Angle;

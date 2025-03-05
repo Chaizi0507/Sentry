@@ -236,8 +236,7 @@ typedef __packed struct
     uint16_t remaining_time;
     uint16_t self_blood;
     uint16_t self_outpost_HP;
-    uint8_t color : 1;
-    uint8_t invincible_state : 7;
+    uint8_t color_invincible_state;
 } Referee_Rx_A_t;
 
 typedef __packed struct
@@ -245,7 +244,7 @@ typedef __packed struct
     uint16_t self_base_HP;
     uint16_t oppo_outpost_HP;
     uint16_t projectile_allowance_17mm;  
-    uint8_t outpost_rfid : 1;
+    uint8_t  outpost_rfid : 1;
 } Referee_Rx_B_t;
 
 typedef __packed struct // 0x0207 实时射击信息

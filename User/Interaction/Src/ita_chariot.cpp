@@ -79,24 +79,91 @@ void Class_Chariot::Init(float __DR16_Dead_Zone)
 #ifdef CHASSIS
 void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
 {
-    uint16_t Shooter_Barrel_Cooling_Value,Shooter_Barrel_Heat_Limit,HP,Self_Outpost_HP,Oppo_Outpost_HP;
+    uint16_t Shooter_Barrel_Cooling_Value,Shooter_Barrel_Heat_Limit,Self_HP,Self_Outpost_HP,Oppo_Outpost_HP,Self_Base_HP;
+    uint8_t color;
+    uint16_t Pre_HP[6] = {0};
+    uint16_t HP[6] = {0};
+    uint8_t Flag[6] = {0};
+    float Count[6] = {0};
+    float Pre_Count[6] = {0};
+    //数据更新
+    if(Referee.Get_ID() == Referee_Data_Robots_ID_RED_SENTRY_7)
+    {
+        color = 1;
+        Oppo_Outpost_HP = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_OUTPOST_11);
+        Self_Outpost_HP = Referee.Get_HP(Referee_Data_Robots_ID_RED_OUTPOST_11);
+        Self_Base_HP = Referee.Get_HP(Referee_Data_Robots_ID_RED_BASE_10);
 
+        for(int i = 0;i < 6;i++)
+        {
+            Pre_HP[i] = HP[i];
+        }
+        
+        HP[0] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_HERO_1);
+        HP[1] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_ENGINEER_2);
+        HP[2] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_INFANTRY_3);
+        HP[3] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_INFANTRY_4);
+        HP[4] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_INFANTRY_5);
+        HP[5] = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_SENTRY_7);
+
+    }
+    else if(Referee.Get_ID() == Referee_Data_Robots_ID_BLUE_SENTRY_7)
+    {
+        color = 0;
+        Oppo_Outpost_HP = Referee.Get_HP(Referee_Data_Robots_ID_RED_OUTPOST_11);
+        Self_Outpost_HP = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_OUTPOST_11);
+        Self_Base_HP = Referee.Get_HP(Referee_Data_Robots_ID_BLUE_BASE_10);
+
+        for(int i = 0;i < 6;i++)
+        {
+            Pre_HP[i] = HP[i];
+        }
+
+        HP[0] = Referee.Get_HP(Referee_Data_Robots_ID_RED_HERO_1);
+        HP[1] = Referee.Get_HP(Referee_Data_Robots_ID_RED_ENGINEER_2);
+        HP[2] = Referee.Get_HP(Referee_Data_Robots_ID_RED_INFANTRY_3);
+        HP[3] = Referee.Get_HP(Referee_Data_Robots_ID_RED_INFANTRY_4);
+        HP[4] = Referee.Get_HP(Referee_Data_Robots_ID_RED_INFANTRY_5);
+        HP[5] = Referee.Get_HP(Referee_Data_Robots_ID_RED_SENTRY_7);
+
+    }
 
     Shooter_Barrel_Heat_Limit = Referee.Get_Booster_17mm_1_Heat_Max();
     Shooter_Barrel_Cooling_Value = Referee.Get_Booster_17mm_1_Heat_CD();
-    HP = Referee.Get_HP();
+    Self_HP = Referee.Get_HP();
 
-    //Self_Outpost_HP = Referee.Get_Self_Outpost_HP();
-    //Oppo_Outpost_HP = Referee.Get_Oppo_Outpost_HP();
-
+    for(int i = 0;i < 6;i++)//无敌状态辨认
+    {
+        if(HP[i] > 0 && Pre_HP[i] == 0)
+        {
+            Flag[i] = 1;
+            Pre_Count[i] = DWT_GetTimeline_s();
+        }
+        if(Flag[i] == 1)
+        {
+            Count[i] = DWT_GetTimeline_s();
+        }
+        if((Count[i] - Pre_Count[i]) > 10.f)
+        {
+            Flag[i] = 0;
+            Pre_Count[i] = 0;
+            Count[i] = 0;
+        }
+    }
 
     //发送数据给云台
+    //A包
     CAN3_Chassis_Tx_Data_A[0] = Referee.Get_Game_Stage();
     CAN3_Chassis_Tx_Data_A[1] = Referee.Get_Remaining_Time() >> 8;
     CAN3_Chassis_Tx_Data_A[2] = Referee.Get_Remaining_Time();
-    memcpy(CAN3_Chassis_Tx_Data_A + 3, &HP, sizeof(uint16_t));
-    // memcpy(CAN3_Chassis_Tx_Data_A + 2, &Shooter_Barrel_Heat_Limit, sizeof(uint16_t));
-    // memcpy(CAN3_Chassis_Tx_Data_A + 4, &Shooter_Barrel_Cooling_Value, sizeof(uint16_t));
+    memcpy(CAN3_Chassis_Tx_Data_A + 3, &Self_HP, sizeof(uint16_t));
+    memcpy(CAN3_Chassis_Tx_Data_A + 5, &Self_Outpost_HP, sizeof(uint16_t));
+    CAN3_Chassis_Tx_Data_A[7] = color << 7 | Flag[5] << 5 | Flag[4] << 4 | Flag[3] << 3 | Flag[2] << 2 | Flag[1] << 1 | Flag[0] << 0;
+
+    //B包
+    memcpy(CAN3_Chassis_Tx_Data_B + 0, &Self_Base_HP, sizeof(uint16_t));
+    memcpy(CAN3_Chassis_Tx_Data_B + 2, &Oppo_Outpost_HP, sizeof(uint16_t));
+
 }
 #endif
 
@@ -154,21 +221,8 @@ int atk_cnt = 0;
 void Class_Chariot::CAN_Gimbal_Rx_Chassis_Callback()
 {
     Chassis_Alive_Flag++;
-
-    Enum_Referee_Data_Robots_ID robo_id;
-    Enum_Referee_Game_Status_Stage game_stage;
     uint16_t Shooter_Barrel_Cooling_Value;
     uint16_t Shooter_Barrel_Heat_Limit;
-
-    robo_id = (Enum_Referee_Data_Robots_ID)CAN_Manage_Object->Rx_Buffer.Data[0];
-    game_stage = (Enum_Referee_Game_Status_Stage)CAN_Manage_Object->Rx_Buffer.Data[1];
-    memcpy(&Shooter_Barrel_Heat_Limit, CAN_Manage_Object->Rx_Buffer.Data + 2, sizeof(uint16_t));
-    memcpy(&Shooter_Barrel_Cooling_Value, CAN_Manage_Object->Rx_Buffer.Data + 4, sizeof(uint16_t));
-
-    Referee.Set_Robot_ID(robo_id);
-    Referee.Set_Booster_17mm_1_Heat_CD(Shooter_Barrel_Cooling_Value);
-    Referee.Set_Booster_17mm_1_Heat_Max(Shooter_Barrel_Heat_Limit);
-    Referee.Set_Game_Stage(game_stage);
     switch(CAN_Manage_Object->Rx_Buffer.Header.Identifier){
         case (0x88):{
             memcpy(&PRE_CAN3_Chassis_Rx_Data_A, &CAN3_Chassis_Rx_Data_A, sizeof(Referee_Rx_A_t));
@@ -179,6 +233,10 @@ void Class_Chariot::CAN_Gimbal_Rx_Chassis_Callback()
             }
             if(PRE_CAN3_Chassis_Rx_Data_A.self_blood == CAN3_Chassis_Rx_Data_A.self_blood)atk_cnt++;
             if(atk_cnt > 100)atk_flag = 0;
+            break;
+        }
+        case (0x99):{
+            memcpy(&CAN3_Chassis_Rx_Data_B, CAN_Manage_Object->Rx_Buffer.Data, sizeof(Referee_Rx_B_t));
             break;
         }
     }
@@ -421,8 +479,6 @@ void Class_Chariot::Control_Gimbal()
 
     // 遥控器操作逻辑
     tmp_gimbal_yaw -= dr16_y * DR16_Yaw_Angle_Resolution;
-    // tmp_gimbal_pitch_a += dr16_r_y * DR16_Pitch_Angle_Resolution;
-    // tmp_gimbal_pitch_b += dr16_r_y * DR16_Pitch_Angle_Resolution;
     // 限制角度范围 处理yaw轴180度问题
     if ((tmp_gimbal_yaw ) > 180.0f)
     {
@@ -446,8 +502,7 @@ void Class_Chariot::Control_Gimbal()
 
         // 设定角度
         Gimbal.Set_Target_Yaw_Angle(tmp_gimbal_yaw);
-        // Gimbal.Set_Target_Pitch_Angle_A(tmp_gimbal_pitch_a);
-        // Gimbal.Set_Target_Pitch_Angle_B(tmp_gimbal_pitch_b);
+
     }
 }
 #endif

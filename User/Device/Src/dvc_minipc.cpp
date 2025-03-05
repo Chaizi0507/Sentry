@@ -54,8 +54,6 @@ void Class_MiniPC::Data_Process()
  */
 extern Referee_Rx_A_t CAN3_Chassis_Rx_Data_A;
 extern Referee_Rx_B_t CAN3_Chassis_Rx_Data_B;
-
-
 void Class_MiniPC::Output()
 {
 	Data_MCU_To_NUC.header                         = Frame_Header;
@@ -65,13 +63,13 @@ void Class_MiniPC::Output()
   Data_MCU_To_NUC.Gimbal_Now_Yaw_Angle_B         = int16_t( Now_Angle_Yaw_B * 100);
   Data_MCU_To_NUC.Gimbal_Now_Yaw_Angle_Main      = int16_t( IMU->Get_Angle_Yaw() * 100);
   Data_MCU_To_NUC.Chassis_Now_yaw_Angle          = int16_t((IMU->Get_Angle_Yaw() + Now_Angle_Relative) * 100);
-  // Data_MCU_To_NUC.Game_process                   = can_rx1.game_process;
+  Data_MCU_To_NUC.Game_process                   = CAN3_Chassis_Rx_Data_A.game_process;
   Data_MCU_To_NUC.Self_blood                     = CAN3_Chassis_Rx_Data_A.self_blood;
-  // Data_MCU_To_NUC.Self_Outpost_HP                = can_rx1.self_outpost_HP;
-  // Data_MCU_To_NUC.Remaining_Time                 = can_rx1.time;
-  // Data_MCU_To_NUC.Oppo_Outpost_HP                = can_rx2.oppo_outpost_HP;
-  // Data_MCU_To_NUC.Self_Base_HP                   = can_rx2.self_base_HP;   
-  // Data_MCU_To_NUC.Color_Invincible_State         = ( can_rx2.color<<7 ) | can_rx2.invincible_state;
+  Data_MCU_To_NUC.Self_Outpost_HP                = CAN3_Chassis_Rx_Data_A.self_outpost_HP;
+  Data_MCU_To_NUC.Remaining_Time                 = CAN3_Chassis_Rx_Data_A.remaining_time;
+  Data_MCU_To_NUC.Oppo_Outpost_HP                = CAN3_Chassis_Rx_Data_B.oppo_outpost_HP;
+  Data_MCU_To_NUC.Self_Base_HP                   = CAN3_Chassis_Rx_Data_B.self_base_HP;   
+  Data_MCU_To_NUC.Color_Invincible_State         = CAN3_Chassis_Rx_Data_A.color_invincible_state << 7 | CAN3_Chassis_Rx_Data_A.color_invincible_state << 5;
   Data_MCU_To_NUC.crc16                          = 0xffff;
 
 	memcpy(USB_Manage_Object->Tx_Buffer, &Data_MCU_To_NUC, sizeof(Struct_MiniPC_Tx_Data));
