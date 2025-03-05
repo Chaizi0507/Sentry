@@ -248,12 +248,13 @@ void Class_DJI_Motor_GM6020::Init(FDCAN_HandleTypeDef *hcan, Enum_DJI_Motor_ID _
     Encoder_Offset = __Encoder_Offset;
     Omega_Max = __Omega_Max;
     CAN_Tx_Data = allocate_tx_data(hcan, __CAN_ID);
+    init_filter(&filter,WINDOW_SIZE);
 }
-
 /**
  * @brief 数据处理过程
  *
  */
+
 void Class_DJI_Motor_GM6020::Data_Process()
 {
     //数据处理过程
@@ -294,7 +295,7 @@ void Class_DJI_Motor_GM6020::Data_Process()
     Data.Now_Omega_Radian = (float)tmp_omega * RPM_TO_RADPS;
     Data.Now_Omega_Angle = (float)tmp_omega * RPM_TO_DEG;  
     Data.Now_Torque = tmp_torque;
-    Data.Now_Temperature = tmp_temperature + CELSIUS_TO_KELVIN;
+    Data.Now_Temperature = tmp_temperature + CELSIUS_TO_KELVIN;			
     float temp_yaw;
     if (Get_Now_Radian() > Get_Zero_Position())
     {
@@ -320,6 +321,7 @@ void Class_DJI_Motor_GM6020::Data_Process()
     //存储预备信息
     Data.Pre_Encoder = tmp_encoder;
     Data.Pre_Total_Encoder = Data.Total_Encoder;
+    Data.Pre_Angle = Data.Now_Angle;
     if(Start_Falg==0)  Start_Falg = 1;
 }
 
@@ -368,7 +370,7 @@ void Class_DJI_Motor_GM6020::TIM_Alive_PeriodElapsedCallback()
     }
     Pre_Flag = Flag;
 }
-
+float ang = 0.0f,ome = 90;
 /**
  * @brief TIM定时器中断计算回调函数
  *
@@ -404,6 +406,7 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     case (DJI_Motor_Control_Method_ANGLE):
     {
         PID_Angle.Set_Target(Target_Angle);
+        //PID_Angle.Set_Target(ang);
         PID_Angle.Set_Now(Transform_Angle);//转换后的角度，右手螺旋定律，标准坐标系
         PID_Angle.TIM_Adjust_PeriodElapsedCallback();
 
@@ -420,12 +423,14 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     {       
         
         PID_Angle.Set_Target(Target_Angle);
+        //PID_Angle.Set_Target(ang);
         PID_Angle.Set_Now(t_yaw * 180.0f /PI);
         PID_Angle.TIM_Adjust_PeriodElapsedCallback();
         
         Target_Omega_Angle = PID_Angle.Get_Out();;
 
         PID_Omega.Set_Target(-Target_Omega_Angle);//逆时针速度为负，而角度逆时针为正，加负号，使速度与角度方向一致
+        //PID_Omega.Set_Target(ome);
         PID_Omega.Set_Now(Data.Now_Omega_Angle);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 

@@ -171,6 +171,11 @@ enum Enum_Auto_aim_Status : uint8_t
     Auto_aim_Status_ENABLE,
 };
 
+enum Enum_Auto_Limit_Status : uint8_t
+{
+    Auto_Limit_Status_DISABLE = 0,
+    Auto_Limit_Status_ENABLE,
+};
 /**
  * @brief 下位机接收的规划数据
  *
@@ -209,10 +214,8 @@ struct Struct_MiniPC_Tx_Data
     int16_t Gimbal_Now_Yaw_Angle_Main; // Main云台yaw角度
     int16_t Gimbal_Now_Yaw_Angle_A;    // A云台yaw角度  
     int16_t Gimbal_Now_Pitch_Angle_A;  // A云台pitch角度
-    int16_t Gimbal_Now_Roll_Angle_A;   // A云台roll角度
     int16_t Gimbal_Now_Yaw_Angle_B;    // B云台yaw角度
     int16_t Gimbal_Now_Pitch_Angle_B;  // B云台pitch角度
-    int16_t Gimbal_Now_Roll_Angle_B;   // B云台roll角度
     int16_t Chassis_Now_yaw_Angle;   // 当前底盘yaw角度
     uint8_t Game_process;          // 比赛阶段
     uint16_t Self_blood;           // 自身hp
@@ -261,8 +264,8 @@ public:
     void Init(Struct_USB_Manage_Object* __MiniPC_USB_Manage_Object, uint8_t __frame_header = 0x5A, uint8_t __frame_rear = 0x01);
 
     inline Enum_MiniPC_Status Get_MiniPC_Status();
-    inline float Get_Chassis_Target_Velocity_X();
-    inline float Get_Chassis_Target_Velocity_Y();
+    inline int16_t Get_Chassis_Target_Velocity_X();
+    inline int16_t Get_Chassis_Target_Velocity_Y();
     inline float Get_Gimbal_Angular_Velocity_Yaw_Main();
     inline float Get_Gimbal_Angular_Velocity_Yaw_A();
     inline float Get_Gimbal_Angular_Velocity_Pitch_A();
@@ -295,11 +298,10 @@ public:
     inline Enum_MiniPC_Gimbal_Control_Mode Get_Gimbal_Control_Mode();
     inline Enum_Auto_aim_Status Get_Auto_aim_Status_A();
     inline Enum_Auto_aim_Status Get_Auto_aim_Status_B();
+    inline Enum_Auto_Limit_Status Get_Auto_Limit_Status_A();
+    inline Enum_Auto_Limit_Status Get_Auto_Limit_Status_B();
 
     inline void Set_Game_Stage(Enum_MiniPC_Game_Stage __Game_Stage);
-    //inline void Set_Chassis_Now_Velocity_X(float __Chassis_Now_Velocity_X);
-    inline void Set_Chassis_Now_Velocity_Y(float __Chassis_Now_Velocity_Y);
-    inline void Set_Chassis_Now_Omega(float __Chassis_Now_Omega);
     inline void Set_Gimbal_Now_Yaw_Angle_A(float __Gimbal_Now_Yaw_Angle);
     inline void Set_Gimbal_Now_Yaw_Omega_A(float __Gimbal_Now_Yaw_Omega);
     inline void Set_Gimbal_Now_Pitch_Angle_A(float __Gimbal_Now_Pitch_Angle);
@@ -316,6 +318,8 @@ public:
     inline void Set_Auto_aim_Status_A(Enum_Auto_aim_Status __Auto_aim_Status);
     inline void Set_Auto_aim_Status_B(Enum_Auto_aim_Status __Auto_aim_Status);
     inline void Set_Gimbal_Now_Yaw_Angle(float __Gimbal_Now_Yaw_Angle);
+    inline void Set_Auto_Limit_Status_A(Enum_Auto_Limit_Status __Auto_Limit_Status);
+    inline void Set_Auto_Limit_Status_B(Enum_Auto_Limit_Status __Auto_Limit_Status);
 
     void Append_CRC16_Check_Sum(uint8_t * pchMessage, uint32_t dwLength);
     bool Verify_CRC16_Check_Sum(const uint8_t * pchMessage, uint32_t dwLength);
@@ -335,11 +339,6 @@ public:
 
     Class_IMU *IMU;
     Class_Referee *Referee;
-    Class_Gimbal_Pitch_Motor_GM6020 *Gimbal_Pitch_Motor_GM6020_A;
-    Class_Gimbal_Pitch_Motor_GM6020 *Gimbal_Pitch_Motor_GM6020_B;
-    Class_Gimbal_Yaw_Motor_GM6020 *Gimbal_Yaw_Motor_GM6020_Main;
-    Class_Gimbal_Yaw_Motor_GM6020 *Gimbal_Yaw_Motor_GM6020_A;
-    Class_Gimbal_Yaw_Motor_GM6020 *Gimbal_Yaw_Motor_GM6020_B;
 
 protected:
     //初始化相关常量
@@ -367,6 +366,9 @@ protected:
     Enum_MiniPC_Status MiniPC_Status = MiniPC_Status_DISABLE;
     //迷你主机对外接口信息
     Struct_MiniPC_Rx_Data Data_NUC_To_MCU;
+    //
+    Enum_Auto_Limit_Status Auto_Limit_A = Auto_Limit_Status_ENABLE;
+    Enum_Auto_Limit_Status Auto_Limit_B = Auto_Limit_Status_ENABLE;
 
     float Now_Angle_Yaw;
 
@@ -456,9 +458,9 @@ Enum_MiniPC_Status Class_MiniPC::Get_MiniPC_Status()
  *
  * @return float 底盘目标速度x
  */
-float Class_MiniPC::Get_Chassis_Target_Velocity_X()
+int16_t Class_MiniPC::Get_Chassis_Target_Velocity_X()
 {
-    return (Data_NUC_To_MCU.MiniPC_To_Chassis_Target_Velocity_X);
+    return (Data_NUC_To_MCU.MiniPC_To_Chassis_Target_Velocity_X);//除以100坐标系转换
 }
 
 /**
@@ -466,7 +468,7 @@ float Class_MiniPC::Get_Chassis_Target_Velocity_X()
  *
  * @return float 底盘目标速度y
  */
-float Class_MiniPC::Get_Chassis_Target_Velocity_Y()
+int16_t Class_MiniPC::Get_Chassis_Target_Velocity_Y()
 {
     return (Data_NUC_To_MCU.MiniPC_To_Chassis_Target_Velocity_Y);
 }
@@ -479,36 +481,6 @@ float Class_MiniPC::Get_Chassis_Target_Velocity_Y()
 float Class_MiniPC::Get_Gimbal_Angular_Velocity_Yaw_Main()
 {
     return (Data_NUC_To_MCU.Gimbal_Angular_Velocity_Yaw_Main);
-}
-
-/**
- * @brief 获取X
- *
- * @return float X
- */
-float Class_MiniPC::Get_Gimbal_Target_X_A()
-{
-    return (Data_NUC_To_MCU.Gimbal_Target_X_A);
-}
-
-/**
- * @brief 获取Y
- *
- * @return float Y
- */
-float Class_MiniPC::Get_Gimbal_Target_Y_A()
-{
-    return (Data_NUC_To_MCU.Gimbal_Target_Y_A);
-}
-
-/**
- * @brief 获取Z
- *
- * @return float Z
- */
-float Class_MiniPC::Get_Gimbal_Target_Z_A()
-{
-    return (Data_NUC_To_MCU.Gimbal_Target_Z_A);
 }
 
 float Class_MiniPC::Get_Gimbal_Error_A()
@@ -544,16 +516,15 @@ Enum_Auto_aim_Status Class_MiniPC::Get_Auto_aim_Status_B()
     return (Data_NUC_To_MCU.Auto_aim_Status_B);
 }
 
-// /**
-//  * @brief 判断目标是否处于无敌状态
-//  *
-//  * @return uint8_t 否：0，是：1
-//  */
-// extern can_rx2_t can_rx2;
-// uint8_t Class_MiniPC::Get_Target_Invincible_State()
-// {
-//     return (can_rx2.invincible_state >> 0 & 0x01);
-// }
+Enum_Auto_Limit_Status Class_MiniPC::Get_Auto_Limit_Status_A()
+{
+    return (Auto_Limit_A);
+}
+
+Enum_Auto_Limit_Status Class_MiniPC::Get_Auto_Limit_Status_B()
+{
+    return (Auto_Limit_B);
+}
 
 /**
  * @brief 设定云台当前角度yaw
@@ -615,6 +586,15 @@ void Class_MiniPC::Set_Gimbal_Now_Yaw_Angle(float __Gimbal_Now_Yaw_Angle)
     Now_Angle_Yaw = __Gimbal_Now_Yaw_Angle;
 }
 
+void Class_MiniPC::Set_Auto_Limit_Status_A(Enum_Auto_Limit_Status __Auto_Limit_Status)
+{
+    Auto_Limit_A = __Auto_Limit_Status;
+}
+
+void Class_MiniPC::Set_Auto_Limit_Status_B(Enum_Auto_Limit_Status __Auto_Limit_Status)
+{
+    Auto_Limit_B = __Auto_Limit_Status;
+}
 
 #endif
 

@@ -17,10 +17,16 @@
 #include "alg_pid.h"
 #include "drv_can.h"
 #include "alg_power_limit.h"
+#include "dvc_dwt.h"
+#include "alg_filter.h"
 
 /* Exported macros -----------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
+
+
+
+
 
 /**
  * @brief 大疆状态
@@ -96,8 +102,20 @@ struct Struct_DJI_Motor_Data
     int32_t Total_Encoder;
     int32_t Total_Round;
     int32_t Pre_Total_Encoder;
+    float Pre_Angle;
 };
 
+typedef struct avg {
+    int data[5];
+
+    int read;
+    int write;
+
+    void (* push)(struct avg*, int *);
+    void (* pop)(struct avg* a);
+    float (* getAvg)(struct avg* a);
+
+}AVG;
 /**
  * @brief GM6020无刷电机, 单片机控制输出电压
  *
@@ -133,6 +151,7 @@ public:
     inline float Get_Transform_Angle();
     inline float Get_Transform_Omega();
     inline float Get_Transform_Torque();
+    inline float Get_Pre_Angle();
 
     inline void Set_DJI_Motor_Control_Method(Enum_DJI_Motor_Control_Method __DJI_Motor_Control_Method);
     inline void Set_Target_Angle(float __Target_Angle);
@@ -145,6 +164,7 @@ public:
     inline void Set_Transform_Angle(float __Transform_Angle);
     inline void Set_Transform_Omega(float __Transform_Omega);
     inline void Set_Transform_Torque(float __Transform_Torque);
+    inline void Set_Now_Omega_Angle(float __Now_Omega_Angle);
 
     void CAN_RxCpltCallback(uint8_t *Rx_Data);
     void TIM_Alive_PeriodElapsedCallback();
@@ -158,7 +178,10 @@ public:
     float t_yaw = 0.0f;
     float rpm = 1.0f;
     int invert_flag = 0; //正反转标志位
+    uint64_t t = 0.f , pre_t = 0.f;
+    float dt;
 
+    SpikeFilter filter;
 protected:
     //初始化相关变量
 
@@ -248,6 +271,7 @@ public:
     inline float Get_Now_Omega_Radian();
     inline float Get_Now_Torque();
     inline uint8_t Get_Now_Temperature();
+    
     
     inline Enum_DJI_Motor_Control_Method Get_Control_Method();
     inline float Get_Target_Angle();
@@ -379,6 +403,8 @@ public:
     float v;
     float init_v = 0.0f;
 
+    uint8_t *CAN_Tx_Data;
+
 protected:
     //初始化相关变量
 
@@ -387,7 +413,7 @@ protected:
     //收数据绑定的CAN ID, C6系列0x201~0x208, GM系列0x205~0x20b
     Enum_DJI_Motor_ID CAN_ID;
     //发送缓存区
-    uint8_t *CAN_Tx_Data;
+    //uint8_t *CAN_Tx_Data;
     //减速比, 默认带减速箱
     float Gearbox_Rate;
     //最大扭矩, 需根据不同负载测量后赋值, 也就开环和扭矩环输出用得到, 不过我感觉应该没有奇葩喜欢开环输出这玩意
@@ -525,6 +551,11 @@ float Class_DJI_Motor_GM6020::Get_Now_Temperature()
     return (Data.Now_Temperature);
 }
 
+float Class_DJI_Motor_GM6020::Get_Pre_Angle()
+{
+    return (Data.Pre_Angle);
+}
+
 /**
  * @brief 获取电机控制方式
  *
@@ -619,6 +650,8 @@ float Class_DJI_Motor_GM6020::Get_Transform_Torque()
 {
     return (Transform_Torque);
 }
+
+
 
 /**
  * @brief 设定电机控制方式
@@ -716,6 +749,10 @@ void Class_DJI_Motor_GM6020::Set_Transform_Torque(float __Transform_Torque)
     Transform_Torque = __Transform_Torque;
 }
 
+void Class_DJI_Motor_GM6020::Set_Now_Omega_Angle(float __Now_Omega_Angle)
+{
+    Data.Now_Omega_Angle = __Now_Omega_Angle;
+}
 /**
  * @brief 获取最大输出电流
  *
@@ -934,6 +971,7 @@ void Class_DJI_Motor_C610::Set_Target_Torque(float __Target_Torque)
 void Class_DJI_Motor_C610::Set_Out(float __Out)
 {
     Out = __Out;
+    Output();
 }
 
 

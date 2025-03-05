@@ -163,9 +163,9 @@ protected:
     float Friction_Omega = 800.0f;
 		
     //拨弹盘实际的目标速度, 一圈八发子弹
-    float Driver_Omega = -2.0f * PI;
+    float Driver_Omega = -2.0f * PI * 2;
     //拨弹轮目标绝对角度 加圈数
-    float Drvier_Angle = 0.0f;
+    float Driver_Angle = 0.0f;
     //读写变量
 
     //内部函数
