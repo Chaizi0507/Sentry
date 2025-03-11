@@ -158,7 +158,7 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>chariot,0x0A</ItemText>
+          <ItemText>\\Sentry\../User/Task/Src/tsk_config_and_callback.cpp\chariot</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

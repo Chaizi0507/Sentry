@@ -370,7 +370,7 @@ void Class_DJI_Motor_GM6020::TIM_Alive_PeriodElapsedCallback()
     }
     Pre_Flag = Flag;
 }
-float ang = 0.0f,ome = 90;
+float ang = 0.0f,ome = 0.f;
 /**
  * @brief TIM定时器中断计算回调函数
  *
@@ -397,6 +397,7 @@ void Class_DJI_Motor_GM6020::TIM_PID_PeriodElapsedCallback()
     case (DJI_Motor_Control_Method_OMEGA):
     {
         PID_Omega.Set_Target(Target_Omega_Angle);
+        //PID_Omega.Set_Target(ome);
         PID_Omega.Set_Now(Transform_Omega);
         PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 

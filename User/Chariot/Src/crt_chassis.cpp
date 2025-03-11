@@ -78,7 +78,7 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
     Motor_Wheel[1].Init(&hfdcan1, DJI_Motor_ID_0x202);
     Motor_Wheel[2].Init(&hfdcan1, DJI_Motor_ID_0x203);
     Motor_Wheel[3].Init(&hfdcan1, DJI_Motor_ID_0x204);
-
+    #ifdef AGV
     //舵向电机PID初始化
 
     Motor_Steer[0].PID_Angle.Init(15.f, 0.0f, 0.0f, 0.0f, Motor_Steer[0].Get_Output_Max(), Motor_Steer[0].Get_Output_Max());
@@ -113,6 +113,7 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
     Motor_Steer[1].init_Yaw = PI/4;
     Motor_Steer[2].init_Yaw = PI/4;
     Motor_Steer[3].init_Yaw = -PI/4;
+    #endif
 
     //底盘控制方式初始化
     Chassis_Control_Type = Chassis_Control_Type_DISABLE;
@@ -124,7 +125,8 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
  *
  */
 float car_V,car_yaw;//车体总体朝向与速度
-void Class_Tricycle_Chassis::Speed_Resolution(){  
+void Class_Tricycle_Chassis::Speed_Resolution(){ 
+    #ifdef AGV 
     for(int i = 0; i < 4; i++){
         Motor_Steer[i].Pre_Yaw = Motor_Steer[i].Yaw;
     }
@@ -222,7 +224,64 @@ void Class_Tricycle_Chassis::Speed_Resolution(){
             
         }
         break;
-    }   
+    }
+    #endif   
+    #ifdef OMNI_WHEEL
+    switch (Chassis_Control_Type)
+    {
+        case (Chassis_Control_Type_DISABLE):
+        {
+            //底盘失能 轮组无力
+            for (int i = 0; i < 4; i++)
+            {
+                Motor_Wheel[i].Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
+                Motor_Wheel[i].PID_Angle.Set_Integral_Error(0.0f);
+                Motor_Wheel[i].Set_Target_Omega_Radian(0.0f);
+                Motor_Wheel[i].Set_Out(0.0f);
+            }            
+        }
+        break;
+        case (Chassis_Control_Type_FLLOW || Chassis_Control_Type_SPIN) :
+        {
+            // 底盘四电机模式配置
+            for (int i = 0; i < 4; i++)
+            {
+                Motor_Wheel[i].Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
+            }
+            // 底盘限速
+            if (Velocity_X_Max != 0)
+            {
+                Math_Constrain(&Target_Velocity_X, -Velocity_X_Max, Velocity_X_Max);
+            }
+            if (Velocity_Y_Max != 0)
+            {
+                Math_Constrain(&Target_Velocity_Y, -Velocity_Y_Max, Velocity_Y_Max);
+            }
+            if (Omega_Max != 0)
+            {
+                Math_Constrain(&Omega_Max, -Omega_Max, Omega_Max);
+            }
+
+            // 速度换算，正运动学分解
+            float motor1_temp_linear_vel = Slope_Velocity_Y.Get_Out() - Slope_Velocity_X.Get_Out() + Slope_Omega.Get_Out() * (HALF_WIDTH + HALF_LENGTH);
+            float motor2_temp_linear_vel = Slope_Velocity_Y.Get_Out() + Slope_Velocity_X.Get_Out() - Slope_Omega.Get_Out() * (HALF_WIDTH + HALF_LENGTH);
+            float motor3_temp_linear_vel = Slope_Velocity_Y.Get_Out() + Slope_Velocity_X.Get_Out() + Slope_Omega.Get_Out() * (HALF_WIDTH + HALF_LENGTH);
+            float motor4_temp_linear_vel = Slope_Velocity_Y.Get_Out() - Slope_Velocity_X.Get_Out() - Slope_Omega.Get_Out() * (HALF_WIDTH + HALF_LENGTH);
+
+            // 线速度 cm/s  转角速度  RAD
+            float motor1_temp_rad = motor1_temp_linear_vel * VEL2RPM * RPM2RAD;
+            float motor2_temp_rad = motor2_temp_linear_vel * VEL2RPM * RPM2RAD;
+            float motor3_temp_rad = motor3_temp_linear_vel * VEL2RPM * RPM2RAD;
+            float motor4_temp_rad = motor4_temp_linear_vel * VEL2RPM * RPM2RAD;
+            // 角速度*减速比  设定目标
+            Motor_Wheel[0].Set_Target_Omega(motor2_temp_rad * M3508_REDUCTION_RATIO);
+            Motor_Wheel[1].Set_Target_Omega(-motor1_temp_rad * M3508_REDUCTION_RATIO);
+            Motor_Wheel[2].Set_Target_Omega(-motor3_temp_rad * M3508_REDUCTION_RATIO);
+            Motor_Wheel[3].Set_Target_Omega(motor4_temp_rad * M3508_REDUCTION_RATIO);
+        }
+        break;
+    }
+    #endif
 }
 
 
@@ -238,8 +297,10 @@ void Class_Tricycle_Chassis::TIM_Calculate_PeriodElapsedCallback(Enum_Sprint_Sta
     //斜坡函数计算用于速度解算初始值获取
     Slope_Velocity_X.Set_Target(Target_Velocity_X);
     Slope_Velocity_X.TIM_Calculate_PeriodElapsedCallback();
+
     Slope_Velocity_Y.Set_Target(Target_Velocity_Y);
     Slope_Velocity_Y.TIM_Calculate_PeriodElapsedCallback();
+
     Slope_Omega.Set_Target(Target_Omega);
     Slope_Omega.TIM_Calculate_PeriodElapsedCallback();
 
@@ -312,12 +373,17 @@ void Class_Tricycle_Chassis::Control_Update()
             temp_err = Motor_Steer[i].Get_Target_Angle() - Motor_Steer[i].t_yaw*180/PI - Motor_Steer[i].invert_flag * 180.0f;
         }
 
-        if(temp_err > 180.0f)      temp_err -= 360.0f;
-        else if(temp_err < -180.0f)temp_err += 360.0f;
+        if(temp_err > 180.0f)      
+            temp_err -= 360.0f;
+        else if(temp_err < -180.0f)
+            temp_err += 360.0f;
 
         Motor_Steer[i].Set_Target_Angle(Motor_Steer[i].t_yaw * 180 / PI + temp_err);
-        if(Motor_Steer[i].invert_flag == 1)Motor_Wheel[i].Set_Target_Omega_Radian(-Motor_Wheel[i].Get_Target_Omega_Radian());
-        else Motor_Wheel[i].Set_Target_Omega_Radian(Motor_Wheel[i].Get_Target_Omega_Radian());
+
+        if(Motor_Steer[i].invert_flag == 1)
+            Motor_Wheel[i].Set_Target_Omega_Radian(-Motor_Wheel[i].Get_Target_Omega_Radian());
+        else 
+            Motor_Wheel[i].Set_Target_Omega_Radian(Motor_Wheel[i].Get_Target_Omega_Radian());
 
         Motor_Steer[i].TIM_PID_PeriodElapsedCallback();
         Motor_Wheel[i].TIM_PID_PeriodElapsedCallback();
@@ -332,6 +398,7 @@ void Class_Tricycle_Chassis::Power_Limit_Update()
     int index = 0;
     Power_Management.Max_Power = 100.f;
     Power_Management.Actual_Power = Referee->Get_Chassis_Power();
+    #ifdef AGV
     for(int i=0;i<8;i++)
     {
         if(i % 2 == 0){
@@ -374,6 +441,28 @@ void Class_Tricycle_Chassis::Power_Limit_Update()
             Motor_Wheel[index].Set_Out(Power_Management.Motor_Data[i].output);
         }
     }
-    
+    #endif
+    #ifdef OMNI_WHEEL
+    for(int i=0;i<4;i++)
+    {
+        temp_out = Motor_Wheel[i].Get_Out();
+        temp_pid_torque = Motor_Wheel[i].Get_Out() * GET_CMD_CURRENT_TO_TORQUE;
+        temp_omega = Motor_Wheel[i].Get_Now_Omega_Radian() * 60 / (2 * PI);
+        temp_feedback_torque = Motor_Wheel[i].Get_Now_Torque() * GET_CMD_CURRENT_TO_TORQUE;
+
+        Power_Management.Motor_Data[i].pid_output = temp_out;
+        Power_Management.Motor_Data[i].torque = temp_pid_torque;
+        Power_Management.Motor_Data[i].feedback_torque = temp_feedback_torque;
+        Power_Management.Motor_Data[i].feedback_omega = temp_omega;
+    }
+
+    Power_Limit.Power_Task(Power_Management);
+
+    //输出
+    for(int i=0;i<4;i++)
+    {
+        Motor_Wheel[i].Set_Out(Power_Management.Motor_Data[i].output);
+    }
+    #endif
 }
 /************************ COPYRIGHT(C) USTC-ROBOWALKER **************************/

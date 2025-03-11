@@ -258,7 +258,6 @@ void Class_Booster::Output()
             Motor_Friction_Left.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
             Motor_Friction_Right.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
 
-
             Driver_Angle -= 2.0f * PI / 8.0f;
             Motor_Driver.Set_Target_Radian(Driver_Angle);
 
@@ -272,10 +271,8 @@ void Class_Booster::Output()
             Motor_Friction_Left.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
             Motor_Friction_Right.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
 
-
             Driver_Angle -= 2.0f * PI / 8.0f * 5.0f; //五连发
             Motor_Driver.Set_Target_Radian(Driver_Angle);
-
 
             Set_Friction_Control_Type(Friction_Control_Type_ENABLE);
         }
@@ -288,15 +285,17 @@ void Class_Booster::Output()
             Motor_Friction_Right.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
 
             // 根据冷却计算拨弹盘默认速度, 此速度下与冷却均衡
-            // Default_Driver_Omega = Referee->Get_Booster_17mm_1_Heat_CD() / 10.0f / 8.0f * 2.0f * PI;
-
-            // 热量控制
+            Default_Driver_Omega = Get_Heat_CD() / 10.0f / 8.0f * 2.0f * PI;
             Motor_Driver.Set_Target_Omega_Radian(Driver_Omega);
+            // 热量控制
+            // if (abs(Driver_Omega) <= abs(Default_Driver_Omega))
+            // {
+            //     Motor_Driver.Set_Target_Omega_Radian(Driver_Omega);
+            // }
             // else
             // {
-            //     float tmp_omega;
-            
-            //     // tmp_omega = (Default_Driver_Omega - Driver_Omega) / Referee->Get_Booster_17mm_1_Heat_Max() * (FSM_Heat_Detect.Heat + 30.0f) + Driver_Omega;
+            //     float tmp_omega;       
+            //     tmp_omega = (Default_Driver_Omega - Driver_Omega) / Heat_Max * (FSM_Heat_Detect.Heat + 30.0f) + Driver_Omega;
             //     Motor_Driver.Set_Target_Omega_Radian(tmp_omega);
             // }
             Set_Friction_Control_Type(Friction_Control_Type_ENABLE);

@@ -25,10 +25,8 @@
 #define PI 3.14159265354f
 
 /*3508参数*/
-#define M3508_REDUATION (3591.f / 187.f)                                                      // 3508标准减速比
-#define M3508_TORQUE_CONSTANT 0.3                                                             // 3508带标准减速箱的转矩常数
 #define M3508_CMD_CURRENT_TO_TORQUE_CURRENT (20.f / 16384.f)                                  // Icmd映射到Itorque
-#define M3508_Kt (M3508_TORQUE_CONSTANT / M3508_REDUATION)                                    // 3508转子的转矩常数
+#define M3508_Kt (3591.f / 187.f)                                                             // 3508转子的转矩常数
 #define M3508_CMD_CURRENT_TO_TORQUE (M3508_CMD_CURRENT_TO_TORQUE_CURRENT * M3508_Kt)          // 发送的电流控制值（16384）映射到转子扭矩
 #define M3508_TORQUE_TO_CMD_CURRENT (1.0f / (M3508_CMD_CURRENT_TO_TORQUE_CURRENT * M3508_Kt)) // 转子扭矩映射到电流控制值（16384）
 /*------------------------------------------------------------------------*/
@@ -68,6 +66,11 @@
 #define GET_CMD_CURRENT_TO_TORQUE(motor_index) ((motor_index % 2 == 0) ? DIR_CMD_CURRENT_TO_TORQUE : MOT_CMD_CURRENT_TO_TORQUE)
 #define GET_TORQUE_TO_CMD_CURRENT(motor_index) ((motor_index % 2 == 0) ? DIR_TORQUE_TO_CMD_CURRENT : MOT_TORQUE_TO_CMD_CURRENT)
 
+#endif
+
+#ifdef OMNI_WHEEL
+#define GET_CMD_CURRENT_TO_TORQUE M3508_CMD_CURRENT_TO_TORQUE
+#define GET_TORQUE_TO_CMD_CURRENT M3508_TORQUE_TO_CMD_CURRENT
 #endif
 /*---------------------------------------------------------------------------------*/
 

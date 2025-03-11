@@ -284,8 +284,8 @@ protected:
     //初始化相关常量
     float Gimbal_Head_Angle;
     //常量
-    float CRUISE_SPEED_YAW = 60.f;
-    float CRUISE_SPEED_PITCH = 10.f;
+    float CRUISE_SPEED_YAW = 120.f;
+    float CRUISE_SPEED_PITCH = 70.f;
     // yaw轴最小值
     float Min_Yaw_Angle = - 180.0f;
     float Min_Yaw_Angle_A = - 180.0f;
@@ -311,7 +311,8 @@ protected:
     float True_Angle_Pitch_B = 0.0f;
     float True_Angle_Yaw_Main = 0.0f;
 
-    uint16_t A_Cruise_Flag,B_Cruise_Flag = 0;
+    uint16_t A_Cruise_Flag = 0,B_Cruise_Flag = 0;
+    uint16_t A_Invert_Flag = 0,B_Invert_Flag = 0;
 
     //读变量
 

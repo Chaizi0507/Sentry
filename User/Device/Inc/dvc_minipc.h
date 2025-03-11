@@ -249,11 +249,10 @@ typedef __packed struct
 
 typedef __packed struct // 0x0207 实时射击信息
 {
-    uint8_t bullet_type;         // 子弹类型
-    uint8_t shooter_number;      // 发射机构ID
-    uint8_t launching_frequency; // 射频
-    float initial_speed;         // 弹速
-} can_rx3_t;
+    uint16_t Booster_Heat_CD_A;
+    uint16_t Booster_Heat_CD_B;
+    uint32_t reserved;
+} Referee_Rx_C_t;
 
 
 

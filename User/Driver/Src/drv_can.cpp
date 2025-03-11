@@ -67,6 +67,7 @@ uint8_t CAN_Supercap_Tx_Data[8];
 
 uint8_t CAN3_Chassis_Tx_Data_A[8];   //底盘给云台发送缓冲区
 uint8_t CAN3_Chassis_Tx_Data_B[8];   //底盘给云台发送缓冲区
+uint8_t CAN3_Chassis_Tx_Data_C[8];   //底盘给云台发送缓冲区
 uint8_t CAN3_Gimbal_Tx_Chassis_Data[8];  //云台给底盘发送缓冲区
 
 /*********LK电机 控制缓冲区***********/
@@ -332,6 +333,7 @@ void TIM_CAN_PeriodElapsedCallback()
         //上板
         CAN_Send_Data(&hfdcan3, 0x88, CAN3_Chassis_Tx_Data_A, 8);
         CAN_Send_Data(&hfdcan3, 0x99, CAN3_Chassis_Tx_Data_B, 8);
+        CAN_Send_Data(&hfdcan3, 0x77, CAN3_Chassis_Tx_Data_C, 8);
     }
 
     #elif defined (GIMBAL)

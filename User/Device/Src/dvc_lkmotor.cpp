@@ -334,7 +334,7 @@ void Class_LK_Motor::TIM_Process_PeriodElapsedCallback()
         case (LK_Motor_Control_Method_OMEGA):
         {
             PID_Omega.Set_Target(Target_Omega_Angle);
-            PID_Omega.Set_Now(Data.Now_Omega_Angle);
+            PID_Omega.Set_Now(Transform_Omega);
             PID_Omega.TIM_Adjust_PeriodElapsedCallback();
 
             Target_Current = PID_Omega.Get_Out();

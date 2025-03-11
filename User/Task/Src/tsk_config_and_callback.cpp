@@ -443,7 +443,8 @@ void Task100us_TIM4_Callback()
     #elif defined(GIMBAL)
         // 单给IMU消息开的定时器 ims
         chariot.Gimbal.Boardc_BMI.TIM_Calculate_PeriodElapsedCallback();     
-
+        IMUA_UART7_Callback(UART7_Manage_Object.Rx_Buffer, UART7_Manage_Object.Rx_Length);
+        IMUB_USART1_Callback(UART1_Manage_Object.Rx_Buffer, UART1_Manage_Object.Rx_Length);
 
     #endif
 }
@@ -537,7 +538,7 @@ extern "C" void Task_Init()
         
         //遥控器接收
         UART_Init(&huart5, DR16_UART5_Callback, 18);
-		UART_Init(&huart7, IMUA_UART7_Callback, 56);
+		    UART_Init(&huart7, IMUA_UART7_Callback, 56);
         UART_Init(&huart1, IMUB_USART1_Callback, 56);
 
         //上位机USB
