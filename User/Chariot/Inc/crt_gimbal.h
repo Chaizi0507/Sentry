@@ -284,7 +284,7 @@ protected:
     //初始化相关常量
     float Gimbal_Head_Angle;
     //常量
-    float CRUISE_SPEED_YAW = 120.f;
+    float CRUISE_SPEED_YAW = 100.f;
     float CRUISE_SPEED_PITCH = 70.f;
     // yaw轴最小值
     float Min_Yaw_Angle = - 180.0f;

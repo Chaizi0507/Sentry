@@ -160,8 +160,13 @@ void Chassis_Device_CAN3_Callback(Struct_CAN_Rx_Buffer *CAN_RxMessage){
         case (0x77):  //留给上板通讯
         {
             chariot.CAN_Chassis_Rx_Gimbal_Callback(CAN_RxMessage->Data);
+            break;
         }
-        
+        case (0x67)://超电接收
+        {
+            chariot.Chassis.Supercap.CAN_RxCpltCallback(CAN_RxMessage->Data);
+            break;
+        }
     }
 }
 #endif

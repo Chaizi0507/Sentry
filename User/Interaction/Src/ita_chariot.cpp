@@ -422,7 +422,6 @@ void Class_Chariot::Control_Chassis()
                         chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
                     }
                     else chassis_omega = 0;//不随动
-
                 break;
             }
             else if (MiniPC.Get_MiniPC_Status() == MiniPC_Status_DISABLE 
@@ -442,6 +441,10 @@ void Class_Chariot::Control_Chassis()
             chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
             chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
             if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN)chassis_omega = -0.75f;
+            if(MiniPC.Get_Chassis_Target_Velocity_Omega() != 0.f && DR16.Get_Left_Switch() == DR16_Switch_Status_DOWN)
+            {
+                chassis_omega = float(MiniPC.Get_Chassis_Target_Velocity_Omega() / 100.f);
+            }
             break;
         }
         
@@ -523,7 +526,7 @@ int Booster_Sign = 0;
 #ifdef GIMBAL
 void Class_Chariot::Control_Booster()
 {
-    static uint8_t booster_sign = 0;
+    static uint8_t booster_sign = 0,booster_sign_a = 0,booster_sign_b = 0;
     volatile int DR16_Left_Switch_Status = DR16.Get_Left_Switch();
     switch(DR16_Left_Switch_Status){
         case(DR16_Switch_Status_MIDDLE): // 左中 失能
@@ -557,33 +560,48 @@ void Class_Chariot::Control_Booster()
         }
         case(DR16_Switch_Status_DOWN):  // 左下 上位机
         {
-            if(DR16.Get_Right_Switch() == DR16_Switch_Status_MIDDLE)
+            if (DR16.Get_Right_Switch() == DR16_Switch_Status_UP)
+            {
+                Booster_A.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
+                if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
+                {
+                    booster_sign_a = 0;
+                }
+                else if (DR16.Get_Yaw() >= 0.8 && booster_sign_a == 0) // 单发
+                {
+                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+                    booster_sign_a = 1;
+                }
+                else if (DR16.Get_Yaw() <= -0.8 && booster_sign_a == 0) // 五连发
+                {
+                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+                    booster_sign_a = 1;
+                }
+            }
+            else if(DR16.Get_Right_Switch() == DR16_Switch_Status_MIDDLE)
+            {
+                Booster_B.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
+                if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
+                {
+                    booster_sign_b = 0;
+                }
+                else if (DR16.Get_Yaw() >= 0.8 && booster_sign_b == 0) // 单发
+                {
+                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+                    booster_sign_b = 1;
+                }
+                else if (DR16.Get_Yaw() <= -0.8 && booster_sign_b == 0) // 五连发
+                {
+                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+                    booster_sign_b = 1;
+                }
+            }
+            else if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN)
             {
                 if(MiniPC.Get_Auto_aim_Status_A() == Auto_aim_Status_ENABLE)Booster_A.Set_Booster_Control_Type(Booster_Control_Type_REPEATED);
                 else if (MiniPC.Get_Auto_aim_Status_A() == Auto_aim_Status_DISABLE)Booster_A.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
                 if(MiniPC.Get_Auto_aim_Status_B() == Auto_aim_Status_ENABLE)Booster_B.Set_Booster_Control_Type(Booster_Control_Type_REPEATED);
                 else if (MiniPC.Get_Auto_aim_Status_B() == Auto_aim_Status_DISABLE)Booster_B.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
-            }
-            else if (DR16.Get_Right_Switch() == DR16_Switch_Status_UP)
-            {
-                Booster_A.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
-                Booster_B.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
-                if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
-                {
-                    booster_sign = 0;
-                }
-                else if (DR16.Get_Yaw() >= 0.8 && booster_sign == 0) // 单发
-                {
-                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
-                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
-                    booster_sign = 1;
-                }
-                else if (DR16.Get_Yaw() <= -0.8 && booster_sign == 0) // 五连发
-                {
-                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
-                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
-                    booster_sign = 1;
-                }
             }
             break;
         }
@@ -615,6 +633,8 @@ void Class_Chariot::TIM_Calculate_PeriodElapsedCallback()
                 Chassis.Motor_Steer[i].Set_Out(0.0f);
             }
         }
+
+        
 				
     #elif defined(GIMBAL)
 

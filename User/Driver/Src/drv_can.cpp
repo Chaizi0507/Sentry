@@ -65,6 +65,7 @@ uint8_t CAN3_0xxf8_Tx_Data[8];
 
 uint8_t CAN_Supercap_Tx_Data[8];
 
+
 uint8_t CAN3_Chassis_Tx_Data_A[8];   //底盘给云台发送缓冲区
 uint8_t CAN3_Chassis_Tx_Data_B[8];   //底盘给云台发送缓冲区
 uint8_t CAN3_Chassis_Tx_Data_C[8];   //底盘给云台发送缓冲区
@@ -324,8 +325,10 @@ void TIM_CAN_PeriodElapsedCallback()
         mod5 = 0;
         //3508    
         CAN_Send_Data(&hfdcan1, 0x200, CAN1_0x200_Tx_Data, 8);
+        #ifdef AGV
         //6020
         CAN_Send_Data(&hfdcan2, 0x1fe, CAN2_0x1fe_Tx_Data, 8);
+        #endif
     }
     
     if (mod10 == 10)
@@ -334,8 +337,9 @@ void TIM_CAN_PeriodElapsedCallback()
         CAN_Send_Data(&hfdcan3, 0x88, CAN3_Chassis_Tx_Data_A, 8);
         CAN_Send_Data(&hfdcan3, 0x99, CAN3_Chassis_Tx_Data_B, 8);
         CAN_Send_Data(&hfdcan3, 0x77, CAN3_Chassis_Tx_Data_C, 8);
+        //超电
+        CAN_Send_Data(&hfdcan3, 0x66, CAN_Supercap_Tx_Data, 8);
     }
-
     #elif defined (GIMBAL)
 
     static uint8_t mod5 = 0,mod2 = 0;

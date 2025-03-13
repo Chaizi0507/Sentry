@@ -48,7 +48,7 @@ void Class_Tricycle_Chassis::Vector_Plus()//实现向量a+b
 void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max, float __Omega_Max, float __Steer_Power_Ratio)
 {
     Power_Limit.Init();
-    Supercap.Init_UART(&huart10);
+    Supercap.Init(&hfdcan3,100.f);
     
     Velocity_X_Max = __Velocity_X_Max;
     Velocity_Y_Max = __Velocity_Y_Max;
@@ -56,16 +56,11 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
     Steer_Power_Ratio = __Steer_Power_Ratio;
 
     //斜坡函数加减速速度X  控制周期1ms
-    Slope_Velocity_X.Init(0.004f,0.008f);
+    Slope_Velocity_X.Init(0.002f,0.004f);
     //斜坡函数加减速速度Y  控制周期1ms
-    Slope_Velocity_Y.Init(0.004f,0.008f);
+    Slope_Velocity_Y.Init(0.002f,0.004f);
     //斜坡函数加减速角速度
     Slope_Omega.Init(0.05f, 0.05f);
-
-    #ifdef POWER_LIMIT
-    //超级电容初始化
-    Supercap.Init(&hfdcan2,45);
-    #endif
 
     //电机PID批量初始化
     for (int i = 0; i < 4; i++)
@@ -308,22 +303,10 @@ void Class_Tricycle_Chassis::TIM_Calculate_PeriodElapsedCallback(Enum_Sprint_Sta
     //速度解算
     Speed_Resolution();
     
+    /***************************超级电容*********************************/     
+    Supercap.TIM_Supercap_PeriodElapsedCallback();
 
     #if POWER_CONTROL == 1
-    
-    /****************************超级电容***********************************/
-    // Supercap.Set_Now_Power(Referee->Get_Chassis_Power());
-    // if(Referee->Get_Referee_Status()==Referee_Status_DISABLE)
-    //     Supercap.Set_Limit_Power(45.0f);
-    // else
-    // {
-    //     float offset;
-    //     offset = (Referee->Get_Chassis_Energy_Buffer()-20.0f)/4;
-    //     Supercap.Set_Limit_Power(Referee->Get_Chassis_Power_Max() + offset);
-    // }
-        
-    // Supercap.TIM_Supercap_PeriodElapsedCallback();
-
     /*************************功率限制策略*******************************/
     Power_Limit_Update();
 
@@ -398,6 +381,7 @@ void Class_Tricycle_Chassis::Power_Limit_Update()
     int index = 0;
     Power_Management.Max_Power = 100.f;
     Power_Management.Actual_Power = Referee->Get_Chassis_Power();
+    //Power_Management.Actual_Power = float(Supercap.Get_Chassis_Power() / 100.f);
     #ifdef AGV
     for(int i=0;i<8;i++)
     {

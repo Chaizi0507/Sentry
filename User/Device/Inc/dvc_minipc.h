@@ -171,6 +171,12 @@ enum Enum_Auto_aim_Status : uint8_t
     Auto_aim_Status_ENABLE,
 };
 
+enum Enum_Main_Yaw_Status : uint8_t
+{
+    Main_Yaw_Cruise = 0,
+    Main_Yaw_Working,
+};
+
 enum Enum_Auto_Limit_Status : uint8_t
 {
     Auto_Limit_Status_DISABLE = 0,
@@ -200,6 +206,7 @@ struct Struct_MiniPC_Rx_Data
     Enum_MiniPC_Chassis_Control_Mode Chassis_Control_Mode; // 底盘控制模式 随动/小陀螺
     Enum_Auto_aim_Status Auto_aim_Status_A;   // 云台控制模式 巡航/非巡航
     Enum_Auto_aim_Status Auto_aim_Status_B;   // 云台控制模式 巡航/非巡航
+    //Enum_Main_Yaw_Status Main_Yaw_Status; // 主云台yaw控制模式 巡航/非巡航
     uint16_t crc16;
 } __attribute__((packed));
 
@@ -264,6 +271,7 @@ public:
     inline Enum_MiniPC_Status Get_MiniPC_Status();
     inline int16_t Get_Chassis_Target_Velocity_X();
     inline int16_t Get_Chassis_Target_Velocity_Y();
+    inline int16_t Get_Chassis_Target_Velocity_Omega();
     inline float Get_Gimbal_Angular_Velocity_Yaw_Main();
     inline float Get_Gimbal_Angular_Velocity_Yaw_A();
     inline float Get_Gimbal_Angular_Velocity_Pitch_A();
@@ -298,6 +306,7 @@ public:
     inline Enum_Auto_aim_Status Get_Auto_aim_Status_B();
     inline Enum_Auto_Limit_Status Get_Auto_Limit_Status_A();
     inline Enum_Auto_Limit_Status Get_Auto_Limit_Status_B();
+    inline Enum_Main_Yaw_Status Get_Main_Yaw_Status();
 
     inline void Set_Game_Stage(Enum_MiniPC_Game_Stage __Game_Stage);
     inline void Set_Gimbal_Now_Yaw_Angle_A(float __Gimbal_Now_Yaw_Angle);
@@ -476,6 +485,10 @@ int16_t Class_MiniPC::Get_Chassis_Target_Velocity_Y()
  *
  * @return float 获取底盘目标速度omega
  */
+int16_t  Class_MiniPC::Get_Chassis_Target_Velocity_Omega()
+{
+    return (Data_NUC_To_MCU.Chassis_Angular_Velocity_Yaw);
+}
 float Class_MiniPC::Get_Gimbal_Angular_Velocity_Yaw_Main()
 {
     return (Data_NUC_To_MCU.Gimbal_Angular_Velocity_Yaw_Main);
@@ -513,6 +526,10 @@ Enum_Auto_aim_Status Class_MiniPC::Get_Auto_aim_Status_B()
 {
     return (Data_NUC_To_MCU.Auto_aim_Status_B);
 }
+// Enum_Main_Yaw_Status Class_MiniPC::Get_Main_Yaw_Status()
+// {
+//     return (Data_NUC_To_MCU.Main_Yaw_Status);
+// }
 
 Enum_Auto_Limit_Status Class_MiniPC::Get_Auto_Limit_Status_A()
 {
