@@ -56,9 +56,9 @@ void Class_Tricycle_Chassis::Init(float __Velocity_X_Max, float __Velocity_Y_Max
     Steer_Power_Ratio = __Steer_Power_Ratio;
 
     //斜坡函数加减速速度X  控制周期1ms
-    Slope_Velocity_X.Init(0.002f,0.004f);
+    Slope_Velocity_X.Init(0.001f,0.001f);
     //斜坡函数加减速速度Y  控制周期1ms
-    Slope_Velocity_Y.Init(0.002f,0.004f);
+    Slope_Velocity_Y.Init(0.001f,0.001f);
     //斜坡函数加减速角速度
     Slope_Omega.Init(0.05f, 0.05f);
 
@@ -191,6 +191,14 @@ void Class_Tricycle_Chassis::Speed_Resolution(){
                 Motor_Steer[i].Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_AGV_MODE);
             }
 
+            if((Get_Target_Velocity_X() == 0 && Get_Target_Velocity_Y() == 0) && Get_Target_Omega() == 0)
+            {
+                Motor_Steer[0].Set_Target_Angle(-45.f);
+                Motor_Steer[1].Set_Target_Angle(45.f);
+                Motor_Steer[2].Set_Target_Angle(45.f);
+                Motor_Steer[3].Set_Target_Angle(-45.f);
+            }
+
             Control_Update();
 		}
         break;
@@ -213,6 +221,14 @@ void Class_Tricycle_Chassis::Speed_Resolution(){
             for (int i = 0; i < 4; i++) {
                 Motor_Steer[i].Set_Target_Angle(Motor_Steer[i].Yaw * 180 / PI);//电机坐标系逆时针为正 编码器左手坐标系
                 Motor_Wheel[i].Set_Target_Omega_Radian(Motor_Wheel[i].v / (Wheel_Diameter / 2)); //线速度转角速度
+            }
+
+            if((Get_Target_Velocity_X() == 0 && Get_Target_Velocity_Y() == 0) && Get_Target_Omega() == 0)
+            {
+                Motor_Steer[0].Set_Target_Angle(-45.f);
+                Motor_Steer[1].Set_Target_Angle(45.f);
+                Motor_Steer[2].Set_Target_Angle(45.f);
+                Motor_Steer[3].Set_Target_Angle(-45.f);
             }
 
             Control_Update();

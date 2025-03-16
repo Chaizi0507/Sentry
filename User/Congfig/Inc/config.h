@@ -15,8 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 /* Exported macros -----------------------------------------------------------*/
-#define CHASSIS
-//#define GIMBAL
+//#define CHASSIS
+#define GIMBAL
 
 #define STEERING_WHEEL
 #define POWER_CONTROL 0 //启用功率控制

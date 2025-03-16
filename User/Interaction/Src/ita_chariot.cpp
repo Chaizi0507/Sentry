@@ -156,8 +156,12 @@ void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
     CAN3_Chassis_Tx_Data_A[0] = Referee.Get_Game_Stage();
     CAN3_Chassis_Tx_Data_A[1] = Referee.Get_Remaining_Time() >> 8;
     CAN3_Chassis_Tx_Data_A[2] = Referee.Get_Remaining_Time();
-    memcpy(CAN3_Chassis_Tx_Data_A + 3, &Self_HP, sizeof(uint16_t));
-    memcpy(CAN3_Chassis_Tx_Data_A + 5, &Self_Outpost_HP, sizeof(uint16_t));
+    //memcpy(CAN3_Chassis_Tx_Data_A + 3, &Self_HP, sizeof(uint16_t));
+    CAN3_Chassis_Tx_Data_A[3] = Referee.Get_HP() >> 8;
+    CAN3_Chassis_Tx_Data_A[4] = Referee.Get_HP();
+    //memcpy(CAN3_Chassis_Tx_Data_A + 5, &Self_Outpost_HP, sizeof(uint16_t));
+    CAN3_Chassis_Tx_Data_A[5] = Self_Outpost_HP >> 8;
+    CAN3_Chassis_Tx_Data_A[6] = Self_Outpost_HP;
     CAN3_Chassis_Tx_Data_A[7] = color << 7 | Flag[5] << 5 | Flag[4] << 4 | Flag[3] << 3 | Flag[2] << 2 | Flag[1] << 1 | Flag[0] << 0;
 
     //B包
@@ -229,8 +233,13 @@ void Class_Chariot::CAN_Gimbal_Rx_Chassis_Callback()
     switch(CAN_Manage_Object->Rx_Buffer.Header.Identifier){
         case (0x88):{
             memcpy(&PRE_CAN3_Chassis_Rx_Data_A, &CAN3_Chassis_Rx_Data_A, sizeof(Referee_Rx_A_t));
-            memcpy(&CAN3_Chassis_Rx_Data_A, CAN_Manage_Object->Rx_Buffer.Data, sizeof(Referee_Rx_A_t));
-            if(PRE_CAN3_Chassis_Rx_Data_A.self_blood > CAN3_Chassis_Rx_Data_A.self_blood){
+            CAN3_Chassis_Rx_Data_A.game_process = CAN_Manage_Object->Rx_Buffer.Data[0];
+            CAN3_Chassis_Rx_Data_A.remaining_time = CAN_Manage_Object->Rx_Buffer.Data[1] << 8 | CAN_Manage_Object->Rx_Buffer.Data[2];
+            CAN3_Chassis_Rx_Data_A.self_blood = CAN_Manage_Object->Rx_Buffer.Data[3] << 8 | CAN_Manage_Object->Rx_Buffer.Data[4];
+            CAN3_Chassis_Rx_Data_A.self_outpost_HP = CAN_Manage_Object->Rx_Buffer.Data[5] << 8 | CAN_Manage_Object->Rx_Buffer.Data[6];
+            CAN3_Chassis_Rx_Data_A.color_invincible_state = CAN_Manage_Object->Rx_Buffer.Data[7];
+            if(PRE_CAN3_Chassis_Rx_Data_A.self_blood > CAN3_Chassis_Rx_Data_A.self_blood)
+            {
                 atk_flag = 1;
                 atk_cnt = 0;
             }
@@ -415,24 +424,26 @@ void Class_Chariot::Control_Chassis()
             {//正常非随动加受击陀螺
                 if( MiniPC.Get_Chassis_Control_Mode() == MiniPC_Chassis_Control_Mode_NORMAL || 
                     MiniPC.Get_Chassis_Control_Mode() == MiniPC_Chassis_Control_Mode_NORMAL_SPIN)
-                    if(atk_flag == 1)//受击
-                    {
-                        chassis_omega = 0.75f;//受击陀螺
-                        chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
-                        chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
-                    }
-                    else chassis_omega = 0;//不随动
+                    // if(atk_flag == 1)//受击
+                    // {
+                    //     chassis_omega = 0.75f;//受击陀螺
+                    //     chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
+                    //     chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
+                    // }
+                    // else chassis_omega = 0;//不随动
+                    chassis_omega = 0;
                 break;
             }
             else if (MiniPC.Get_MiniPC_Status() == MiniPC_Status_DISABLE 
                   && DR16.Get_Left_Switch()     == DR16_Switch_Status_DOWN){
-                    if(atk_flag == 1)//受击
-                    {
-                        chassis_omega = 0.75f;//受击陀螺
-                        chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
-                        chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
-                    }
-                    else chassis_omega = 0;//不随动
+                    // if(atk_flag == 1)//受击
+                    // {
+                    //     chassis_omega = 0.75f;//受击陀螺
+                    //     chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
+                    //     chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
+                    // }
+                    // else chassis_omega = 0;//不随动
+                    chassis_omega = 0;
             }
             break;
         }
@@ -440,7 +451,7 @@ void Class_Chariot::Control_Chassis()
             chassis_omega = 0.75f;//符合映射规则
             chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
             chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
-            if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN)chassis_omega = -0.75f;
+            if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN && DR16.Get_Left_Switch() == DR16_Switch_Status_UP)chassis_omega = -0.75f;
             if(MiniPC.Get_Chassis_Target_Velocity_Omega() != 0.f && DR16.Get_Left_Switch() == DR16_Switch_Status_DOWN)
             {
                 chassis_omega = float(MiniPC.Get_Chassis_Target_Velocity_Omega() / 100.f);
@@ -535,26 +546,64 @@ void Class_Chariot::Control_Booster()
             Booster_A.Set_Friction_Control_Type(Friction_Control_Type_DISABLE);
             Booster_B.Set_Booster_Control_Type(Booster_Control_Type_DISABLE);
             Booster_B.Set_Friction_Control_Type(Friction_Control_Type_DISABLE);
-            if(DR16.Get_Right_Switch() == DR16_Switch_Status_UP) // 右上 发射机构开火
+            // if(DR16.Get_Right_Switch() == DR16_Switch_Status_UP) // 右上 发射机构开火
+            // {
+            //     Booster_A.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
+            //     Booster_B.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
+            //     if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
+            //     {
+            //         booster_sign = 0;
+            //     }
+            //     else if (DR16.Get_Yaw() >= 0.8 && booster_sign == 0) // 单发
+            //     {
+            //         Booster_A.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+            //         Booster_B.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+            //         booster_sign = 1;
+            //     }
+            //     else if (DR16.Get_Yaw() <= -0.8 && booster_sign == 0) // 五连发
+            //     {
+            //         Booster_A.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+            //         Booster_B.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+            //         booster_sign = 1;
+            //     }
+            // }
+            if (DR16.Get_Right_Switch() == DR16_Switch_Status_UP)
             {
                 Booster_A.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
+                Booster_A.Set_Booster_Control_Type(Booster_Control_Type_REPEATED);
+                // if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
+                // {
+                //     booster_sign_a = 0;
+                // }
+                // else if (DR16.Get_Yaw() >= 0.8 && booster_sign_a == 0) // 单发
+                // {
+                //     Booster_A.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+                //     booster_sign_a = 1;
+                // }
+                // else if (DR16.Get_Yaw() <= -0.8 && booster_sign_a == 0) // 五连发
+                // {
+                //     Booster_A.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+                //     booster_sign_a = 1;
+                // }
+            }
+            else if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN)
+            {
                 Booster_B.Set_Booster_Control_Type(Booster_Control_Type_CEASEFIRE);
-                if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
-                {
-                    booster_sign = 0;
-                }
-                else if (DR16.Get_Yaw() >= 0.8 && booster_sign == 0) // 单发
-                {
-                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
-                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
-                    booster_sign = 1;
-                }
-                else if (DR16.Get_Yaw() <= -0.8 && booster_sign == 0) // 五连发
-                {
-                    Booster_A.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
-                    Booster_B.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
-                    booster_sign = 1;
-                }
+                Booster_B.Set_Booster_Control_Type(Booster_Control_Type_REPEATED);
+                // if (DR16.Get_Yaw() >= -0.2 && DR16.Get_Yaw() <= 0.2)
+                // {
+                //     booster_sign_b = 0;
+                // }
+                // else if (DR16.Get_Yaw() >= 0.8 && booster_sign_b == 0) // 单发
+                // {
+                //     Booster_B.Set_Booster_Control_Type(Booster_Control_Type_SINGLE);
+                //     booster_sign_b = 1;
+                // }
+                // else if (DR16.Get_Yaw() <= -0.8 && booster_sign_b == 0) // 五连发
+                // {
+                //     Booster_B.Set_Booster_Control_Type(Booster_Control_Type_MULTI);
+                //     booster_sign_b = 1;
+                // }
             }
             break;
         }
