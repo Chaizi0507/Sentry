@@ -21,6 +21,7 @@
 #include "dvc_referee.h"
 #include "math.h"
 #include "drv_uart.h"
+#include "drv_can.h"
 /* Exported macros -----------------------------------------------------------*/
 
 class Class_Gimbal_Pitch_Motor_GM6020;
@@ -266,6 +267,39 @@ struct Struct_MiniPC_Rx_Data
     uint16_t crc16;
 } __attribute__((packed));
 
+typedef __packed struct //0x104
+{
+    int16_t Chassis_Angular_Velocity_Yaw;                    // 底盘转动的角速度, rad/s
+    int16_t MiniPC_To_Chassis_Target_Velocity_X;             // 目标线速度 x
+    int16_t MiniPC_To_Chassis_Target_Velocity_Y;             // 目标线速度 y
+    int16_t Gimbal_Angular_Velocity_Yaw_Main;                    // 目标角速度 w
+} MiniPC_Rx_A_t;
+
+typedef __packed struct //0x105
+{
+    int16_t Gimbal_Angular_Velocity_Yaw_A;
+    int16_t Gimbal_Angular_Velocity_Pitch_A;                     // 目标角速度 p   
+    int16_t Gimbal_Angular_Velocity_Yaw_B;
+    int16_t Gimbal_Angular_Velocity_Pitch_B;
+} MiniPC_Rx_B_t;
+
+typedef __packed struct //0x106
+{
+    int16_t Gimbal_Target_X_A;                                 // 装甲板在云台坐标系的 x 坐标
+    int16_t Gimbal_Target_Y_A;                                 // 装甲板在云台坐标系的 y 坐标
+    int16_t Gimbal_Target_Z_A;                                 // 装甲板在云台坐标系的 z 坐标
+    uint8_t Control_Type_A; // 云台控制模式
+    uint8_t Control_Type_B; // 云台控制模式
+} MiniPC_Rx_C_t;
+
+typedef __packed struct //0x107
+{
+    int16_t Gimbal_Target_X_B;                                 // 装甲板在云台坐标系的 x 坐标
+    int16_t Gimbal_Target_Y_B;                                 // 装甲板在云台坐标系的 y 坐标
+    int16_t Gimbal_Target_Z_B;                                 // 装甲板在云台坐标系的 z 坐标
+    Enum_MiniPC_Chassis_Control_Mode Chassis_Control_Mode; // 底盘控制模式 随动/小陀螺
+    uint8_t Device_Mode; //外设模式
+} MiniPC_Rx_D_t;
 
 /**
  * @brief 下位机发送的反馈数据
@@ -293,7 +327,38 @@ struct Struct_MiniPC_Tx_Data
     uint16_t crc16;
 } __attribute__((packed));
 
+typedef __packed struct //0x100
+{
+    int16_t Gimbal_Now_Yaw_Angle_Main; // Main云台yaw角度
+    int16_t Gimbal_Now_Yaw_Angle_A;    // A云台yaw角度  
+    int16_t Gimbal_Now_Pitch_Angle_A;  // A云台pitch角度
+    int16_t Gimbal_Now_Yaw_Angle_B;    // B云台yaw角度
+} MiniPC_Tx_A_t;
 
+typedef __packed struct //0x101
+{
+    int16_t Gimbal_Now_Pitch_Angle_B;  // B云台pitch角度
+    int16_t Chassis_Now_yaw_Angle;   // 当前底盘yaw角度
+    uint16_t Self_blood;           // 自身hp
+    uint16_t Self_Outpost_HP;      // 己方前哨战hp
+} MiniPC_Tx_B_t;
+
+typedef __packed struct //0x102
+{
+    uint16_t Oppo_Outpost_HP;      // 对方前哨战hp
+    uint16_t Self_Base_HP;         // 己方基地hp
+    uint16_t Projectile_allowance; // 允许发弹量
+    uint16_t Remaining_Time;       // 比赛剩余时间
+} MiniPC_Tx_C_t;
+
+typedef __packed struct //0x103
+{
+    uint8_t Game_process;          // 比赛阶段
+    uint8_t Color_Invincible_State;      // 敌对方无敌状态/自身颜色
+    uint16_t Robot_Position_X;
+    uint16_t Robot_Position_Y;
+    uint16_t reserved;
+} MiniPC_Tx_D_t;
 
 typedef __packed struct //0x88
 {
@@ -341,7 +406,7 @@ typedef __packed struct // 0x97
 class Class_MiniPC
 {
 public:
-    void Init(Struct_USB_Manage_Object* __MiniPC_USB_Manage_Object, Struct_UART_Manage_Object* __UART_Manage_Object,uint8_t __frame_header = 0x5A, uint8_t __frame_rear = 0x01);
+    void Init(Struct_USB_Manage_Object* __MiniPC_USB_Manage_Object, Struct_UART_Manage_Object* __UART_Manage_Object, Struct_CAN_Manage_Object* __CAN_Manage_Object, uint8_t __frame_header = 0x5A, uint8_t __frame_rear = 0x01);
 
     inline Enum_MiniPC_Status Get_MiniPC_Status();
     inline int16_t Get_Chassis_Target_Velocity_X();
@@ -422,6 +487,7 @@ public:
 
     void USB_RxCpltCallback(uint8_t *Rx_Data);
     void UART_RxCpltCallback(uint8_t *Rx_Data);
+    void CAN_RxCpltCallback();
     void TIM1msMod50_Alive_PeriodElapsedCallback();
     void TIM_Write_PeriodElapsedCallback();
 
@@ -436,6 +502,8 @@ protected:
     Struct_USB_Manage_Object *USB_Manage_Object;
     //绑定的串口
     Struct_UART_Manage_Object *UART_Manage_Object;
+    //绑定的CAN
+    Struct_CAN_Manage_Object *CAN_Manage_Object;
     //数据包头标
     uint8_t Frame_Header;
     //数据包尾标
@@ -456,6 +524,10 @@ protected:
     Enum_MiniPC_Status MiniPC_Status = MiniPC_Status_DISABLE;
     //迷你主机对外接口信息
     Struct_MiniPC_Rx_Data Data_NUC_To_MCU;
+    MiniPC_Rx_A_t  Rx_A;
+    MiniPC_Rx_B_t  Rx_B;
+    MiniPC_Rx_C_t  Rx_C;
+    MiniPC_Rx_D_t  Rx_D;
     //
     Enum_Auto_Limit_Status Auto_Limit_A = Auto_Limit_Status_ENABLE;
     Enum_Auto_Limit_Status Auto_Limit_B = Auto_Limit_Status_ENABLE;
@@ -496,6 +568,10 @@ protected:
 
     //迷你主机对外接口信息
     Struct_MiniPC_Tx_Data Data_MCU_To_NUC;
+    MiniPC_Tx_A_t  Tx_A;
+    MiniPC_Tx_B_t  Tx_B;
+    MiniPC_Tx_C_t  Tx_C;
+    MiniPC_Tx_D_t  Tx_D;
 
     //读写变量
 

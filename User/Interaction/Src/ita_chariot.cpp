@@ -67,7 +67,7 @@ void Class_Chariot::Init(float __DR16_Dead_Zone)
         Booster_B.MiniPC = &MiniPC;
 				
         //上位机
-        MiniPC.Init(&MiniPC_USB_Manage_Object,&UART8_Manage_Object);
+        MiniPC.Init(&MiniPC_USB_Manage_Object,&UART8_Manage_Object,&CAN3_Manage_Object);
         MiniPC.IMU = &Gimbal.Boardc_BMI;
         MiniPC.Referee = &Referee;
 

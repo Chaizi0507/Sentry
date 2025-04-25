@@ -29,10 +29,11 @@
  * @param __frame_header 数据包头标
  * @param __frame_rear 数据包尾标
  */
-void Class_MiniPC::Init(Struct_USB_Manage_Object* __USB_Manage_Object, Struct_UART_Manage_Object* __UART_Manage_Object, uint8_t __frame_header, uint8_t __frame_rear)
+void Class_MiniPC::Init(Struct_USB_Manage_Object* __USB_Manage_Object, Struct_UART_Manage_Object* __UART_Manage_Object, Struct_CAN_Manage_Object* __CAN_Manage_Object, uint8_t __frame_header, uint8_t __frame_rear)
 {
 	  USB_Manage_Object = __USB_Manage_Object;
     UART_Manage_Object = __UART_Manage_Object;
+    CAN_Manage_Object = __CAN_Manage_Object;
     Frame_Header = __frame_header;
     Frame_Rear = __frame_rear;
 }
@@ -45,7 +46,7 @@ uint8_t temp_data[128];
 int PACKET_LEN  = sizeof(Struct_MiniPC_Rx_Data);
 void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
 {
-  if(Data_Source == USB)
+  if (Data_Source == USB)
   {
     if(!Verify_CRC16_Check_Sum(USB_Manage_Object->Rx_Buffer,USB_Manage_Object->Rx_Buffer_Length)) return;
     memcpy(&Data_NUC_To_MCU, USB_Manage_Object->Rx_Buffer, PACKET_LEN);
@@ -53,7 +54,7 @@ void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_B / 100.f), &Rx_Angle_Yaw_B, &Rx_Angle_Pitch_B, &Distance_B, Booster_Type_B);
     Rx_Angle_Yaw_Main = calc_yaw(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f) + 13.5f, float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f));
   }
-  else if(Data_Source == UART)
+  else if (Data_Source == UART)
   {
     // 解包部分
     int Header_Flag = -1;
@@ -76,6 +77,53 @@ void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f), &Rx_Angle_Yaw_A, &Rx_Angle_Pitch_A, &Distance_A, Booster_Type_A);
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_B / 100.f), &Rx_Angle_Yaw_B, &Rx_Angle_Pitch_B, &Distance_B, Booster_Type_B);
     Rx_Angle_Yaw_Main = calc_yaw(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f) + 13.5f, float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f));
+  }
+  else if (Data_Source == CAN)
+  {
+    // CAN数据包处理
+    switch(CAN_Manage_Object->Rx_Buffer.Header.Identifier)
+    {
+        case (0x104):
+        {
+          memcpy(&Rx_A,CAN_Manage_Object->Rx_Buffer.Data, sizeof(Rx_A));
+          Data_NUC_To_MCU.Chassis_Angular_Velocity_Yaw = Rx_A.Chassis_Angular_Velocity_Yaw;
+          Data_NUC_To_MCU.MiniPC_To_Chassis_Target_Velocity_X = Rx_A.MiniPC_To_Chassis_Target_Velocity_X;
+          Data_NUC_To_MCU.MiniPC_To_Chassis_Target_Velocity_Y = Rx_A.MiniPC_To_Chassis_Target_Velocity_Y;
+          Data_NUC_To_MCU.Gimbal_Angular_Velocity_Yaw_Main = Rx_A.Gimbal_Angular_Velocity_Yaw_Main;
+          break;
+        }
+        case (0x105):
+        {
+          memcpy(&Rx_B,CAN_Manage_Object->Rx_Buffer.Data, sizeof(Rx_B));
+          Data_NUC_To_MCU.Gimbal_Angular_Velocity_Yaw_A = Rx_B.Gimbal_Angular_Velocity_Yaw_A;
+          Data_NUC_To_MCU.Gimbal_Angular_Velocity_Pitch_A = Rx_B.Gimbal_Angular_Velocity_Pitch_A;
+          Data_NUC_To_MCU.Gimbal_Angular_Velocity_Yaw_B = Rx_B.Gimbal_Angular_Velocity_Yaw_B;
+          Data_NUC_To_MCU.Gimbal_Angular_Velocity_Pitch_B = Rx_B.Gimbal_Angular_Velocity_Pitch_B;
+          break;
+        }
+        case (0x106):
+        {
+          memcpy(&Rx_C,CAN_Manage_Object->Rx_Buffer.Data, sizeof(Rx_C));
+          Data_NUC_To_MCU.Gimbal_Target_X_A = Rx_C.Gimbal_Target_X_A;
+          Data_NUC_To_MCU.Gimbal_Target_Y_A = Rx_C.Gimbal_Target_Y_A;
+          Data_NUC_To_MCU.Gimbal_Target_Z_A = Rx_C.Gimbal_Target_Z_A;
+          Data_NUC_To_MCU.Control_Type_A = Rx_C.Control_Type_A;
+          Data_NUC_To_MCU.Control_Type_B = Rx_C.Control_Type_B;
+          Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f), &Rx_Angle_Yaw_A, &Rx_Angle_Pitch_A, &Distance_A, Booster_Type_A);
+          break;
+        }
+        case (0x107):
+        {
+          memcpy(&Rx_D,CAN_Manage_Object->Rx_Buffer.Data, sizeof(Rx_D));
+          Data_NUC_To_MCU.Gimbal_Target_X_B = Rx_D.Gimbal_Target_X_B;
+          Data_NUC_To_MCU.Gimbal_Target_Y_B = Rx_D.Gimbal_Target_Y_B;
+          Data_NUC_To_MCU.Gimbal_Target_Z_B = Rx_D.Gimbal_Target_Z_B;
+          Data_NUC_To_MCU.Chassis_Control_Mode = Rx_D.Chassis_Control_Mode;
+          Data_NUC_To_MCU.Device_Mode = Rx_D.Device_Mode;
+          Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_B / 100.f), &Rx_Angle_Yaw_B, &Rx_Angle_Pitch_B, &Distance_B, Booster_Type_B);
+          break;
+        }
+    }
   }
 }
 
@@ -175,6 +223,28 @@ void Class_MiniPC::Output()
   //crc校验
   Append_CRC16_Check_Sum(UART_Manage_Object->Tx_Buffer, sizeof(Struct_MiniPC_Tx_Data));
 
+  //CAN通信
+  Tx_A.Gimbal_Now_Pitch_Angle_A = Data_MCU_To_NUC.Gimbal_Now_Pitch_Angle_A;
+  Tx_A.Gimbal_Now_Yaw_Angle_A   = Data_MCU_To_NUC.Gimbal_Now_Yaw_Angle_A;
+  Tx_A.Gimbal_Now_Pitch_Angle_A = Data_MCU_To_NUC.Gimbal_Now_Pitch_Angle_A;
+  Tx_A.Gimbal_Now_Yaw_Angle_B   = Data_MCU_To_NUC.Gimbal_Now_Yaw_Angle_B;
+  Tx_B.Gimbal_Now_Pitch_Angle_B = Data_MCU_To_NUC.Gimbal_Now_Pitch_Angle_B;
+  Tx_B.Chassis_Now_yaw_Angle    = Data_MCU_To_NUC.Chassis_Now_yaw_Angle;
+  Tx_B.Self_blood               = Data_MCU_To_NUC.Self_blood;
+  Tx_B.Self_Outpost_HP          = Data_MCU_To_NUC.Self_Outpost_HP;
+  Tx_C.Oppo_Outpost_HP          = Data_MCU_To_NUC.Oppo_Outpost_HP;
+  Tx_C.Projectile_allowance     = Data_MCU_To_NUC.Projectile_allowance;
+  Tx_C.Remaining_Time           = Data_MCU_To_NUC.Remaining_Time;  
+  Tx_C.Self_Base_HP             = Data_MCU_To_NUC.Self_Base_HP;
+  Tx_D.Color_Invincible_State   = Data_MCU_To_NUC.Color_Invincible_State;
+  Tx_D.Robot_Position_X         = Data_MCU_To_NUC.Robot_Position_X;
+  Tx_D.Robot_Position_Y         = Data_MCU_To_NUC.Robot_Position_Y;
+  Tx_D.Game_process             = Data_MCU_To_NUC.Game_process;  
+  memcpy(CAN3_MiniPC_Tx_Data_A, &Tx_A, sizeof(MiniPC_Tx_A_t));
+  memcpy(CAN3_MiniPC_Tx_Data_B, &Tx_B, sizeof(MiniPC_Tx_B_t));
+  memcpy(CAN3_MiniPC_Tx_Data_C, &Tx_C, sizeof(MiniPC_Tx_C_t));
+  memcpy(CAN3_MiniPC_Tx_Data_D, &Tx_D, sizeof(MiniPC_Tx_D_t));
+
   //重新排序
   index++;
   if(index == 4)index = 0;
@@ -212,6 +282,19 @@ void Class_MiniPC::UART_RxCpltCallback(uint8_t *rx_data)
   Flag += 1;
   Data_Process(UART);
 }
+
+/**
+ * @brief can通信接收回调函数
+ *
+ * @param rx_data 接收的数据
+ */
+void Class_MiniPC::CAN_RxCpltCallback()
+{
+  //滑动窗口, 判断迷你主机是否在线
+  Flag += 1;
+  Data_Process(CAN);
+}
+
 
 
 /**
