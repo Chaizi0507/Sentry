@@ -18,6 +18,7 @@
 #include "limits.h"
 #include "string.h"
 #include "drv_math.h"
+#include "config.h"
 
 /* Exported macros -----------------------------------------------------------*/
 
@@ -225,6 +226,7 @@ enum Enum_Referee_Command_ID : uint16_t
     Referee_Command_ID_ROBOT_REMAINING_AMMO,
     Referee_Command_ID_ROBOT_RFID,
     Referee_Command_ID_ROBOT_DART_COMMAND,
+    Referee_Command_ID_ROBOT_Sentry_Info = 0x020D,
     Referee_Command_ID_INTERACTION = 0x0301,
     Referee_Command_ID_INTERACTION_CUSTOM_CONTROLLER,
     Referee_Command_ID_INTERACTION_RADAR_SEND,
@@ -487,6 +489,16 @@ enum Enum_Graphic_Color
     Graphic_Color_CYAN,
     Graphic_Color_BLACK,
     Graphic_Color_WHITE,
+};
+
+/**
+ * @brief 哨兵复活状态
+ *
+ */
+enum Enum_Sentry_Revive_Status : uint8_t
+{
+    Revive_OFF = 0,
+    Revive_ON,
 };
 
 /**
@@ -963,6 +975,16 @@ struct Struct_Referee_Rx_Data_Robot_Ally_Position
     float reserved_a;  
     float reserved_b;
 } __attribute__((packed));
+/**
+ * @brief 裁判系统经过处理的数据, 0x020D哨兵信息, 10Hz发送
+ *
+ */
+struct Struct_Referee_Rx_Data_Robot_Sentry_Info
+{
+    uint32_t sentry_info;
+    uint16_t sentry_info_2;
+    uint16_t CRC_16;
+} __attribute__((packed));
 
 /**
  * @brief 裁判系统发送或接收的数据, 0x0301机器人间交互信息, 用户自主发送
@@ -1124,12 +1146,12 @@ struct Struct_Referee_Tx_Data_Interaction_Remote_Control
 } __attribute__((packed));
 
 /**
- * @brief 裁判系统发送的数据, 0x200雷达接收小地图交互信息, 用户自主最高30Hz发送
+ * @brief 裁判系统发送的数据, 0x210雷达接收小地图交互信息, 用户自主最高30Hz发送
  *
  */
 struct Struct_Referee_Tx_Data_Interaction_Robot_Receive
 {
-    uint16_t Header = 0x0220;
+    uint16_t Header;
     uint16_t Sender;
     uint16_t Receiver;
     uint16_t hero_position_x; 
@@ -1147,6 +1169,40 @@ struct Struct_Referee_Tx_Data_Interaction_Robot_Receive
     uint16_t CRC_16;
 } __attribute__((packed));
 
+/**
+ * @brief 裁判系统接收的数据, 0x120哨兵自主决策, 用户自主最高30Hz发送
+ *
+ */
+struct Struct_Sentry_cmd_t
+{
+    uint16_t Header = 0x120;
+    Enum_Referee_Data_Robots_ID Sender;
+    uint8_t Reserved;
+    uint16_t Receiver = 0x8080;
+    uint32_t sentry_cmd;
+} __attribute__((packed));
+
+/**
+ * @brief 裁判系统发送的数据, 0x200雷达接收小地图交互信息, 用户自主最高30Hz发送
+ *
+ */
+struct Struct_Sentry_To_Radar_t
+{
+    uint16_t Header = 0x200;
+    Enum_Referee_Data_Robots_ID Sender;
+    uint8_t Reserved;
+    Enum_Referee_Data_Robots_ID Receiver;
+    uint8_t Reserved_2;
+    uint16_t Robot_Position_X;
+    uint16_t Robot_Position_Y;
+} __attribute__((packed));
+
+struct Struct_CAN_Referee_Rx_Data_t //0x95
+{
+    uint32_t Sentry_cmd;
+    uint16_t Robot_Position_X;
+    uint16_t Robot_Position_Y;
+} __attribute__((packed));
 /**
  * @brief Specialized, 裁判系统
  *
@@ -1243,11 +1299,16 @@ public:
     inline uint16_t Get_Sentry_Position_Y();
     inline uint8_t Get_Energy_Left_Rate();
 
+    template <typename T>
+    void Referee_UI_Packed_Data(T* __data);
+
     #ifdef GIMBAL
     inline void Set_Robot_ID(Enum_Referee_Data_Robots_ID __Robot_ID);
     inline void Set_Game_Stage(Enum_Referee_Game_Status_Stage __Game_Stage);  
     inline void Set_Booster_17mm_1_Heat_CD(uint16_t __Booster_17mm_1_Heat_CD);
     inline void Set_Booster_17mm_1_Heat_Max(uint16_t __Booster_17mm_1_Heat_Max);
+    inline void Set_Sentry_Revive_Status(Enum_Sentry_Revive_Status __Sentry_Revive_Status);
+    inline void Set_Sentry_Revive_Buy_Status(Enum_Sentry_Revive_Status __Sentry_Revive_Buy_Status);
     #endif
 
     // void Referee_UI_Draw_Line(uint8_t __Robot_ID, Enum_Referee_UI_Group_Index __Group_Index, uint8_t __Serial, uint8_t __Index, uint32_t __Color,uint32_t __Line_Width, uint32_t __Start_X, uint32_t __Start_Y,  uint32_t __End_X, uint32_t __End_Y,Enum_Referee_UI_Operate_Type __Operate_Type);
@@ -1266,6 +1327,7 @@ public:
     // void UART_Tx_Referee_UI();
 
     void UART_RxCpltCallback(uint8_t *Rx_Data, uint16_t Size);
+    void TIM_UART_Tx_PeriodElapsedCallback();
     void TIM1msMod50_Alive_PeriodElapsedCallback();
 
 protected:
@@ -1324,11 +1386,14 @@ protected:
     Struct_Referee_Rx_Data_Robot_Remaining_Ammo Robot_Remaining_Ammo;
     // RFID状态信息
     Struct_Referee_Rx_Data_Robot_RFID Robot_RFID;
+    // 哨兵状态信息
+    Struct_Referee_Rx_Data_Robot_Sentry_Info Sentry_Info;
     //飞镖状态
     Struct_Referee_Rx_Data_Robot_Dart_Command Robot_Dart_Command;
     //敌军位置
     //客户端接收小地图交互信息
     Struct_Referee_Tx_Data_Interaction_Robot_Receive Interaction_Robot_Receive;
+
 
     //写变量
 
@@ -1346,6 +1411,10 @@ protected:
     Struct_Referee_Tx_Data_Interaction_Graphic_String Interaction_Graphic_String;
     //雷达发送小地图交互信息
     Struct_Referee_Tx_Data_Interaction_Radar_Send Interaction_Radar_Send;
+    //哨兵自主决策
+    Struct_Sentry_cmd_t Sentry_cmd;
+    //哨兵发送雷达位置
+    Struct_Sentry_To_Radar_t Sentry_To_Radar;
 
     //读写变量
 
@@ -1368,38 +1437,38 @@ uint32_t Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
 void Append_CRC16_Check_Sum(uint8_t * pchMessage,uint32_t dwLength);
 
 
-// /**
-//  * @brief 裁判系统数据打包
-//  *
-//  */
-// template <typename T>
-// void Class_Referee::Referee_UI_Packed_Data(T* __data)
-// {
-//     uint16_t frame_length,data_len,cmd_id;
+/**
+ * @brief 裁判系统数据打包
+ *
+ */
+template <typename T>
+void Class_Referee::Referee_UI_Packed_Data(T* __data)
+{
+    uint16_t frame_length,data_len,cmd_id;
     
-//     cmd_id = 0x0301;    //子内容ID
-//     data_len = sizeof(T);      //字符操作数据长度
-// 	frame_length = frameheader_len + cmd_len + data_len + crc_len;   //数据帧长度	
+    cmd_id = 0x0301;    //子内容ID
+    data_len = sizeof(T);      //字符操作数据长度
+	frame_length = frameheader_len + cmd_len + data_len + crc_len;   //数据帧长度	
 
-// 	memset(UART_Manage_Object->Tx_Buffer,0,frame_length);  //存储数据的数组清零
+	memset(UART_Manage_Object->Tx_Buffer,0,frame_length);  //存储数据的数组清零
 	
-// 	/*****帧头打包*****/
-// 	UART_Manage_Object->Tx_Buffer[0] = Frame_Header;//数据帧起始字节
-// 	memcpy(&UART_Manage_Object->Tx_Buffer[1],(uint8_t*)&data_len, 2);//数据帧中data的长度
-// 	UART_Manage_Object->Tx_Buffer[3] = seq;//包序号
-// 	Append_CRC8_Check_Sum(UART_Manage_Object->Tx_Buffer,frameheader_len);  //帧头校验CRC8
+	/*****帧头打包*****/
+	UART_Manage_Object->Tx_Buffer[0] = Frame_Header;//数据帧起始字节
+	memcpy(&UART_Manage_Object->Tx_Buffer[1],(uint8_t*)&data_len, 2);//数据帧中data的长度
+	UART_Manage_Object->Tx_Buffer[3] = seq;//包序号
+	Append_CRC8_Check_Sum(UART_Manage_Object->Tx_Buffer,frameheader_len);  //帧头校验CRC8
 
-// 	/*****命令码打包*****/
-// 	memcpy(&UART_Manage_Object->Tx_Buffer[frameheader_len],(uint8_t*)&cmd_id, cmd_len);
+	/*****命令码打包*****/
+	memcpy(&UART_Manage_Object->Tx_Buffer[frameheader_len],(uint8_t*)&cmd_id, cmd_len);
 	
-// 	/*****数据打包*****/
-// 	memcpy(&UART_Manage_Object->Tx_Buffer[frameheader_len+cmd_len], __data, sizeof(T));
-// 	Append_CRC16_Check_Sum(UART_Manage_Object->Tx_Buffer,frame_length);  //一帧数据校验CRC16
+	/*****数据打包*****/
+	memcpy(&UART_Manage_Object->Tx_Buffer[frameheader_len+cmd_len], __data, sizeof(T));
+	Append_CRC16_Check_Sum(UART_Manage_Object->Tx_Buffer,frame_length);  //一帧数据校验CRC16
 
-//     UART_Manage_Object->Tx_Length = frame_length;
+    UART_Manage_Object->Tx_Length = frame_length;
 
-//     seq++;
-// }
+    seq++;
+}
 
 /**
  * @brief 获取裁判系统状态
@@ -2340,6 +2409,30 @@ void Class_Referee::Set_Booster_17mm_1_Heat_CD(uint16_t __Booster_17mm_1_Heat_CD
 void Class_Referee::Set_Booster_17mm_1_Heat_Max(uint16_t __Booster_17mm_1_Heat_Max)
 {
     this->Robot_Status.Shooter_Barrel_Heat_Limit = __Booster_17mm_1_Heat_Max;
+}
+#endif
+
+/**
+ * @brief 设置哨兵复活状态
+ *
+ * @param __Sentry_Revive_Status 复活模式
+ */
+#ifdef GIMBAL
+void Class_Referee::Set_Sentry_Revive_Status(Enum_Sentry_Revive_Status __Sentry_Revive_Status)
+{
+    Sentry_cmd.sentry_cmd = (Sentry_cmd.sentry_cmd & ~ 0x1u) | (static_cast<uint32_t>(__Sentry_Revive_Status) & 0x1u);
+}
+#endif
+
+/**
+ * @brief 设置哨兵买活状态
+ *
+ * @param __Sentry_Revive_Status 买活模式
+ */
+#ifdef GIMBAL
+void Class_Referee::Set_Sentry_Revive_Buy_Status(Enum_Sentry_Revive_Status __Sentry_Revive_Status)
+{
+    Sentry_cmd.sentry_cmd = (Sentry_cmd.sentry_cmd & ~ 0x2u) | ((static_cast<uint32_t>(__Sentry_Revive_Status ) & 0x2u) << 1);
 }
 #endif
 

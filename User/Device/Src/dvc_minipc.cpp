@@ -50,6 +50,11 @@ void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
   {
     if(!Verify_CRC16_Check_Sum(USB_Manage_Object->Rx_Buffer,USB_Manage_Object->Rx_Buffer_Length)) return;
     memcpy(&Data_NUC_To_MCU, USB_Manage_Object->Rx_Buffer, PACKET_LEN);
+    //转发下板发给裁判系统
+    memcpy(&CAN3_Sentry_CMD_Data, &Data_NUC_To_MCU.Sentry_cmd, sizeof(uint32_t));
+    memcpy(&CAN3_Sentry_CMD_Data[4], &Data_NUC_To_MCU.Robot_Position_X, sizeof(uint16_t));
+    memcpy(&CAN3_Sentry_CMD_Data[6], &Data_NUC_To_MCU.Robot_Position_Y, sizeof(uint16_t));
+    //自瞄解算
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f), &Rx_Angle_Yaw_A, &Rx_Angle_Pitch_A, &Distance_A, Booster_Type_A);
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_B / 100.f), &Rx_Angle_Yaw_B, &Rx_Angle_Pitch_B, &Distance_B, Booster_Type_B);
     Rx_Angle_Yaw_Main = calc_yaw(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f) + 13.5f, float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f));
@@ -73,6 +78,11 @@ void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
     if(!Verify_CRC16_Check_Sum(temp_data, sizeof(Struct_MiniPC_Rx_Data))) return;
     memcpy(&Data_NUC_To_MCU, temp_data, sizeof(Struct_MiniPC_Rx_Data));
     head = (Header_Flag + PACKET_LEN) % 128;
+
+    //转发下板发给裁判系统
+    memcpy(&CAN3_Sentry_CMD_Data, &Data_NUC_To_MCU.Sentry_cmd, sizeof(uint32_t));
+    memcpy(&CAN3_Sentry_CMD_Data[4], &Data_NUC_To_MCU.Robot_Position_X, sizeof(uint16_t));
+    memcpy(&CAN3_Sentry_CMD_Data[6], &Data_NUC_To_MCU.Robot_Position_Y, sizeof(uint16_t));
 
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_A / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_A / 100.f), &Rx_Angle_Yaw_A, &Rx_Angle_Pitch_A, &Distance_A, Booster_Type_A);
     Auto_aim(float(Data_NUC_To_MCU.Gimbal_Target_X_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Y_B / 100.f), float(Data_NUC_To_MCU.Gimbal_Target_Z_B / 100.f), &Rx_Angle_Yaw_B, &Rx_Angle_Pitch_B, &Distance_B, Booster_Type_B);
@@ -124,6 +134,10 @@ void Class_MiniPC::Data_Process(Enum_MiniPC_Data_Source Data_Source)
           break;
         }
     }
+    //转发下板发给裁判系统
+    memcpy(&CAN3_Sentry_CMD_Data, &Data_NUC_To_MCU.Sentry_cmd, sizeof(uint32_t));
+    memcpy(&CAN3_Sentry_CMD_Data[4], &Data_NUC_To_MCU.Robot_Position_X, sizeof(uint16_t));
+    memcpy(&CAN3_Sentry_CMD_Data[6], &Data_NUC_To_MCU.Robot_Position_Y, sizeof(uint16_t));
   }
 }
 
@@ -135,6 +149,7 @@ extern Referee_Rx_A_t CAN3_Chassis_Rx_Data_A;
 extern Referee_Rx_B_t CAN3_Chassis_Rx_Data_B;
 extern Referee_Rx_C_t CAN3_Chassis_Rx_Data_C;
 extern Referee_Rx_D_t CAN3_Chassis_Rx_Data_D;
+extern Referee_Rx_F_t CAN3_Chassis_Rx_Data_F;
 volatile int index = 0;
 void Class_MiniPC::Output()
 {
@@ -186,26 +201,26 @@ void Class_MiniPC::Output()
   {
     case 0:
     {
-      Data_MCU_To_NUC.Robot_Position_X = 0x00 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Hero_Position_X / 255.f) * 16384.f);
-      Data_MCU_To_NUC.Robot_Position_Y = 0x00 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Hero_Position_Y / 255.f) * 16384.f);
+      Data_MCU_To_NUC.Robot_Position_X = 0x00 << 14 | CAN3_Chassis_Rx_Data_D.Hero_Position_X;
+      Data_MCU_To_NUC.Robot_Position_Y = 0x00 << 14 | CAN3_Chassis_Rx_Data_D.Hero_Position_Y;
       break;
     }
     case 1:
     {
-      Data_MCU_To_NUC.Robot_Position_X = 0x02 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Infantry_3_Position_X / 255.f) * 16384.f);
-      Data_MCU_To_NUC.Robot_Position_Y = 0x02 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Infantry_3_Position_Y / 255.f) * 16384.f);
+      Data_MCU_To_NUC.Robot_Position_X = 0x02 << 14 | CAN3_Chassis_Rx_Data_F.Infantry_3_Position_X;
+      Data_MCU_To_NUC.Robot_Position_Y = 0x02 << 14 | CAN3_Chassis_Rx_Data_F.Infantry_3_Position_Y;
       break;
     }
     case 2:
     {
-      Data_MCU_To_NUC.Robot_Position_X = 0x03 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Infantry_4_Position_X / 255.f) * 16384.f);
-      Data_MCU_To_NUC.Robot_Position_Y = 0x03 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Infantry_4_Position_Y / 255.f) * 16384.f);
+      Data_MCU_To_NUC.Robot_Position_X = 0x03 << 14 | CAN3_Chassis_Rx_Data_F.Infantry_4_Position_X;
+      Data_MCU_To_NUC.Robot_Position_Y = 0x03 << 14 | CAN3_Chassis_Rx_Data_F.Infantry_4_Position_Y;
       break;
     }
     case 3:
     {
-      Data_MCU_To_NUC.Robot_Position_X = 0x01 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Sentry_Position_X / 255.f) * 16384.f);
-      Data_MCU_To_NUC.Robot_Position_Y = 0x01 << 14 | (uint16_t)(float(CAN3_Chassis_Rx_Data_D.Sentry_Position_Y / 255.f) * 16384.f);
+      Data_MCU_To_NUC.Robot_Position_X = 0x01 << 14 | CAN3_Chassis_Rx_Data_D.Sentry_Position_X;
+      Data_MCU_To_NUC.Robot_Position_Y = 0x01 << 14 | CAN3_Chassis_Rx_Data_D.Sentry_Position_Y;
       break;
     }
   }
@@ -286,7 +301,7 @@ void Class_MiniPC::UART_RxCpltCallback(uint8_t *rx_data)
 /**
  * @brief can通信接收回调函数
  *
- * @param rx_data 接收的数据
+ * @param 
  */
 void Class_MiniPC::CAN_RxCpltCallback()
 {

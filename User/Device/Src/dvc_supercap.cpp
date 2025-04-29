@@ -127,7 +127,7 @@ void Class_Supercap::Output()
     if(Get_Buffer_Power() < 10.f) Supercap_Flag = 0;
     if(Supercap_Flag == 0) Set_Working_Status(Working_Status_OFF);
     if(Get_Buffer_Power() > 50.f) Supercap_Flag = 1;
-    Supercap_Tx_Data.Limit_Power = 10.f;
+    Supercap_Tx_Data.Limit_Power = 100.f;
     Set_Working_Status(Working_Status_ON);
     // Set_Working_Status(Working_Status_OFF);
     memcpy(CAN_Tx_Data, &Supercap_Tx_Data, sizeof(Struct_Supercap_Tx_Data));

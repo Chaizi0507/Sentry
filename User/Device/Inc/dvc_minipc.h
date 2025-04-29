@@ -264,8 +264,12 @@ struct Struct_MiniPC_Rx_Data
     uint8_t Control_Type_A; // 云台控制模式
     uint8_t Control_Type_B; // 云台控制模式
     uint8_t Device_Mode; //外设模式
+    uint32_t Sentry_cmd;
+    uint16_t Robot_Position_X;
+    uint16_t Robot_Position_Y;
     uint16_t crc16;
 } __attribute__((packed));
+
 
 typedef __packed struct //0x104
 {
@@ -353,7 +357,7 @@ typedef __packed struct //0x102
 
 typedef __packed struct //0x103
 {
-    uint8_t Game_process;          // 比赛阶段
+    uint8_t Game_process;                // 比赛阶段
     uint8_t Color_Invincible_State;      // 敌对方无敌状态/自身颜色
     uint16_t Robot_Position_X;
     uint16_t Robot_Position_Y;
@@ -387,14 +391,10 @@ typedef __packed struct // 0x78
 
 typedef __packed struct // 0x98 
 {
-    uint8_t Hero_Position_X;
-    uint8_t Hero_Position_Y;
-    uint8_t Sentry_Position_X;
-    uint8_t Sentry_Position_Y;
-    uint8_t Infantry_3_Position_X;
-    uint8_t Infantry_3_Position_Y;
-    uint8_t Infantry_4_Position_X;
-    uint8_t Infantry_4_Position_Y;
+    uint16_t Hero_Position_X;
+    uint16_t Hero_Position_Y;
+    uint16_t Sentry_Position_X;
+    uint16_t Sentry_Position_Y;
 } Referee_Rx_D_t;
 
 typedef __packed struct // 0x97
@@ -403,6 +403,13 @@ typedef __packed struct // 0x97
     float Bullet_Speed_B;
 } Referee_Rx_E_t;
 
+typedef __packed struct // 0x96
+{
+    uint16_t Infantry_3_Position_X;
+    uint16_t Infantry_3_Position_Y;
+    uint16_t Infantry_4_Position_X;
+    uint16_t Infantry_4_Position_Y;
+} Referee_Rx_F_t;
 class Class_MiniPC
 {
 public:

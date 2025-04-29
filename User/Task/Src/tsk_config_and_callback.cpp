@@ -190,8 +190,14 @@ void Chassis_Device_CAN3_Callback(Struct_CAN_Rx_Buffer *CAN_RxMessage){
         case (0x55):
         {
             chariot.Chassis.Supercap.CAN_RxCpltCallback(CAN_RxMessage->Data);
+            break;
         }
-        break;
+        case (0x95):
+        {
+            chariot.CAN_Chassis_Rx_Gimbal_Callback(CAN_RxMessage->Data);
+            break;
+        }
+        
     }
 }
 #endif
@@ -302,6 +308,14 @@ void Gimbal_Device_CAN3_Callback(Struct_CAN_Rx_Buffer *CAN_RxMessage){
             chariot.CAN_Gimbal_Rx_Chassis_Callback();
         }
         break;
+        case (0x97):
+        {
+            chariot.CAN_Gimbal_Rx_Chassis_Callback();
+        }
+        case (0x96):
+        {
+            chariot.CAN_Gimbal_Rx_Chassis_Callback();
+        }
         case (0x104):
         {
             chariot.MiniPC.CAN_RxCpltCallback();
@@ -562,12 +576,16 @@ void Task1ms_TIM5_Callback()
     /****************************** 驱动层回调函数 1ms *****************************************/ 
         //统一打包发送
         TIM_CAN_PeriodElapsedCallback();
-        //上位机
+        
         static int mod5 = 0;
         mod5++;
         if (mod5 == 5)
         {
+            // 上位机
             TIM_USB_PeriodElapsedCallback(&MiniPC_USB_Manage_Object);
+            // 裁判系统发送
+            chariot.Referee.TIM_UART_Tx_PeriodElapsedCallback();
+            // 串口统一发送
             TIM_UART_PeriodElapsedCallback();
             mod5 = 0;
         }	        

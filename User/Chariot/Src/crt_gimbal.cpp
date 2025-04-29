@@ -33,13 +33,13 @@ void Class_Gimbal::Init()
     Boardc_BMI.Init();
 
     // yaw轴电机
-    Motor_Yaw_A.PID_Angle.Init(40.f, 0.0f, 0.0f, 0.0f, 500, 500);
-    Motor_Yaw_A.PID_Omega.Init(40.0f, 15.0f, 0.0f, 0.0f, 6000, Motor_Yaw_A.Get_Output_Max(), 10.f, 50.f);
+    Motor_Yaw_A.PID_Angle.Init(30.f, 0.0f, 0.0f, 0.0f, 500, 500);
+    Motor_Yaw_A.PID_Omega.Init(60.0f, 10.0f, 0.0f, 0.0f, 6000, Motor_Yaw_A.Get_Output_Max(), 10.f, 50.f);
     Motor_Yaw_A.PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Yaw_A.Get_Output_Max(), Motor_Yaw_A.Get_Output_Max());
     Motor_Yaw_A.Init(&hfdcan2, DJI_Motor_ID_0x205, DJI_Motor_Control_Method_ANGLE, 2048);
 
     Motor_Yaw_B.PID_Angle.Init(25.f, 0.0f, 0.0f, 0.0f, 500, 500);
-    Motor_Yaw_B.PID_Omega.Init(60.0f, 5.0f, 0.0f, 0.0f, 8000, Motor_Yaw_B.Get_Output_Max(), 10.f, 50.f);
+    Motor_Yaw_B.PID_Omega.Init(60.0f, 10.0f, 0.0f, 0.0f, 8000, Motor_Yaw_B.Get_Output_Max(), 10.f, 50.f);
     Motor_Yaw_B.PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Yaw_B.Get_Output_Max(), Motor_Yaw_B.Get_Output_Max());
     Motor_Yaw_B.Init(&hfdcan1, DJI_Motor_ID_0x205, DJI_Motor_Control_Method_ANGLE, 2048);
 
@@ -49,13 +49,13 @@ void Class_Gimbal::Init()
     Motor_Main_Yaw.Init(&hfdcan3, LK_Motor_ID_0x141, LK_Motor_Control_Method_ANGLE, 2048);
     
     // pitch轴电机
-    Motor_Pitch_A.PID_Angle.Init(25.f, 0.0f, 0.0f, 0.0f, 2.f, 650.f);
-    Motor_Pitch_A.PID_Omega.Init(90.0f, 400.0f, 0.0f, 0.0f, 6000, Motor_Pitch_A.Get_Output_Max(),0.f,0.f,40.f);
+    Motor_Pitch_A.PID_Angle.Init(22.f, 0.0f, 0.001f, 0.0f, 2.f, 650.f);
+    Motor_Pitch_A.PID_Omega.Init(90.0f, 20.0f, 0.0f, 0.0f, 6000, Motor_Pitch_A.Get_Output_Max(),0.f,0.f,40.f);
     Motor_Pitch_A.PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Pitch_A.Get_Output_Max(), Motor_Pitch_A.Get_Output_Max());
     Motor_Pitch_A.Init(&hfdcan2, DJI_Motor_ID_0x206, DJI_Motor_Control_Method_ANGLE, 3413);
 
-    Motor_Pitch_B.PID_Angle.Init(25.f, 0.0f, 0.00f, 0.0f, 2.f, 650.f);
-    Motor_Pitch_B.PID_Omega.Init(90.0f, 400.0f, 0.0f, 0.0f, 6000, Motor_Pitch_B.Get_Output_Max(),0.f,0.f,40.f);
+    Motor_Pitch_B.PID_Angle.Init(22.f, 0.0f, 0.001f, 0.0f, 2.f, 650.f);
+    Motor_Pitch_B.PID_Omega.Init(90.0f, 20.0f, 0.0f, 0.0f, 6000, Motor_Pitch_B.Get_Output_Max(),0.f,0.f,40.f);
     Motor_Pitch_B.PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Pitch_B.Get_Output_Max(), Motor_Pitch_B.Get_Output_Max());
     Motor_Pitch_B.Init(&hfdcan1, DJI_Motor_ID_0x206, DJI_Motor_Control_Method_ANGLE, 3413);
 
