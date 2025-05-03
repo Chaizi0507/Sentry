@@ -84,7 +84,7 @@ void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
     uint16_t Shooter_Heat_A,Shooter_Heat_B;
     uint16_t Cooling_Value;
     uint16_t Self_HP,Self_Outpost_HP,Oppo_Outpost_HP,Self_Base_HP,Ammo_number;
-    uint8_t color;
+    uint8_t color,remaining_energy,supercap_proportion;
     uint16_t Pre_HP[6] = {0};
     uint16_t HP[6] = {0};
     uint8_t Flag[6] = {0};
@@ -147,6 +147,8 @@ void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
     Self_HP = Referee.Get_HP();
     Ammo_number = Referee.Get_17mm_Remaining();
     Cooling_Value = Referee.Get_Booster_17mm_Heat_CD();
+    remaining_energy = Referee.Get_Remaining_Energy();
+    supercap_proportion = Chassis.Supercap.Get_Supercap_Proportion();
 
     for(int i = 0;i < 6;i++)//无敌状态辨认
     {
@@ -195,6 +197,8 @@ void Class_Chariot::CAN_Chassis_Tx_Gimbal_Callback()
     //C包
     memcpy(CAN3_Chassis_Tx_Data_C + 0, &Shooter_Heat_A, sizeof(uint16_t));
     memcpy(CAN3_Chassis_Tx_Data_C + 2, &Shooter_Heat_B, sizeof(uint16_t));
+    memcpy(CAN3_Chassis_Tx_Data_C + 4, &remaining_energy, sizeof(uint8_t));
+    memcpy(CAN3_Chassis_Tx_Data_C + 5, &supercap_proportion, sizeof(uint8_t));
 
     //D包
     memcpy(CAN3_Chassis_Tx_Data_D + 0, &Position[0], sizeof(uint16_t));
@@ -523,8 +527,13 @@ void Class_Chariot::Control_Chassis()
             relative_angle += Gimbal.Motor_Main_Yaw.Get_Now_Omega_Radian() * Offset_K;
             chassis_velocity_x = Chassis.Get_Target_Velocity_X() * cos(relative_angle) - Chassis.Get_Target_Velocity_Y() * sin(relative_angle);
             chassis_velocity_y = Chassis.Get_Target_Velocity_X() * sin(relative_angle) + Chassis.Get_Target_Velocity_Y() * cos(relative_angle);
-            if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN && DR16.Get_Left_Switch() == DR16_Switch_Status_UP)chassis_omega = -0.75f;
-            if(MiniPC.Get_Chassis_Target_Velocity_Omega() != 0.f && DR16.Get_Left_Switch() == DR16_Switch_Status_DOWN)
+            if(DR16.Get_Right_Switch() == DR16_Switch_Status_DOWN &&
+                DR16.Get_Left_Switch() == DR16_Switch_Status_UP)
+            {
+                chassis_omega = -0.75f;
+            }
+            if(MiniPC.Get_Chassis_Target_Velocity_Omega() != 0.f && 
+                DR16.Get_Left_Switch() == DR16_Switch_Status_DOWN)
             {
                 chassis_omega = float(MiniPC.Get_Chassis_Target_Velocity_Omega() / 100.f);
             }

@@ -43,10 +43,10 @@
 #include "dvc_dmmotor.h"
 #include "ita_chariot.h"
 #include "dvc_imu.h"
-#include "drv_usb.h"
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
 #include "config.h"
+#include "iwdg.h"
 //#include "GraphicsSendTask.h"
 //#include "ui.h"
 //#include "dvc_GraphicsSendTask.h"
@@ -367,9 +367,9 @@ void Device_SPI2_Callback(uint8_t *Tx_Buffer, uint8_t *Rx_Buffer, uint16_t Lengt
 }
 
 /**
- * @brief UART1陀螺仪回调函数
+ * @brief UART7陀螺仪回调函数
  *
- * @param Buffer UART1收到的消息
+ * @param Buffer UART7收到的消息
  * @param Length 长度
  */
 #ifdef GIMBAL
@@ -404,9 +404,9 @@ void IMUA_UART7_Callback(uint8_t *Buffer, uint16_t Length)
 
 
 /**
- * @brief UART7陀螺仪回调函数
+ * @brief UART1陀螺仪回调函数
  *
- * @param Buffer UART7收到的消息
+ * @param Buffer UART1收到的消息
  * @param Length 长度
  */
 
@@ -556,6 +556,7 @@ void Task1ms_TIM5_Callback()
     /************ 判断设备在线状态判断 50ms (所有device:电机，遥控器，裁判系统等) ***************/
     
     chariot.TIM1msMod50_Alive_PeriodElapsedCallback();
+    HAL_IWDG_Refresh(&hiwdg1);
 
     /****************************** 交互层回调函数 1ms *****************************************/
     if(start_flag==1)
@@ -583,8 +584,10 @@ void Task1ms_TIM5_Callback()
         {
             // 上位机
             TIM_USB_PeriodElapsedCallback(&MiniPC_USB_Manage_Object);
+            #ifdef CHASSIS
             // 裁判系统发送
             chariot.Referee.TIM_UART_Tx_PeriodElapsedCallback();
+            #endif
             // 串口统一发送
             TIM_UART_PeriodElapsedCallback();
             mod5 = 0;

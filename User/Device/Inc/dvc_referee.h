@@ -863,7 +863,7 @@ struct Struct_Referee_Rx_Data_Robot_Buff
     uint8_t Booster_Cooling_Buff_Rate ;
     uint8_t Defend_Buff_Rate ; //机器人防御增益（百分比，值为 50 表示 50%防御增益）
     uint8_t Vulnerability_Buff_Rate; //机器人负防御增益（百分比，值为 30 表示-30%防御增益）
-    uint8_t Damage_Buff_Rate ; //机器人攻击增益（百分比，值为 50 表示 50%攻击增益）
+    uint16_t Damage_Buff_Rate ; //机器人攻击增益（百分比，值为 50 表示 50%攻击增益）
     uint8_t Energy_Left_Rate ; //机器人剩余能量值反馈
     uint16_t CRC_16;
 } __attribute__((packed));
@@ -1261,6 +1261,7 @@ public:
     inline uint8_t Get_Booster_Cooling_Buff_Rate();
     inline uint8_t Get_Defend_Buff_Rate();
     inline uint8_t Get_Damage_Buff_Rate();
+    inline uint8_t Get_Remaining_Energy();
     inline uint8_t Get_Aerial_Remaining_Time();
     inline uint8_t Get_Armor_Attacked_ID();
     inline Enum_Referee_Data_Event_Robot_Damage_Type Get_Attacked_Type();
@@ -2060,7 +2061,15 @@ uint8_t Class_Referee::Get_Damage_Buff_Rate()
 {
     return (Robot_Buff.Damage_Buff_Rate);
 }
-
+/**
+ * @brief 获取剩余能量
+ *
+ * @return 
+ */
+uint8_t Class_Referee::Get_Remaining_Energy()
+{
+    return (Robot_Buff.Energy_Left_Rate);
+}
 /**
  * @brief 获取无人机时间
  *

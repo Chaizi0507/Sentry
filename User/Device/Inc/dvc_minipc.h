@@ -326,8 +326,10 @@ struct Struct_MiniPC_Tx_Data
     uint16_t Projectile_allowance; // 允许发弹量
     uint16_t Remaining_Time;       // 比赛剩余时间
     uint8_t Color_Invincible_State;      // 敌对方无敌状态/自身颜色
-    uint16_t Robot_Position_X;
-    uint16_t Robot_Position_Y;
+    uint16_t Robot_Position_X;//雷达发送位置X
+    uint16_t Robot_Position_Y;//雷达发送位置Y
+    uint8_t Remaining_Energy;
+    uint8_t Supercap_Proportion;
     uint16_t crc16;
 } __attribute__((packed));
 
@@ -361,7 +363,8 @@ typedef __packed struct //0x103
     uint8_t Color_Invincible_State;      // 敌对方无敌状态/自身颜色
     uint16_t Robot_Position_X;
     uint16_t Robot_Position_Y;
-    uint16_t reserved;
+    uint8_t  Remaining_Energy;
+    uint8_t  Supercap_Proportion;
 } MiniPC_Tx_D_t;
 
 typedef __packed struct //0x88
@@ -378,14 +381,15 @@ typedef __packed struct //0x99
     uint16_t self_base_HP;
     uint16_t oppo_outpost_HP;
     uint16_t projectile_allowance_17mm;  
-    uint8_t  cooling_value;
+    uint16_t cooling_value;
 } Referee_Rx_B_t;
 
 typedef __packed struct // 0x78 
 {
     uint16_t Booster_Heat_A;
     uint16_t Booster_Heat_B;
-    uint16_t Ammo_Number;
+    uint8_t  Remaining_Energy;
+    uint8_t  Supercap_Proportion;
     uint16_t reserved;
 } Referee_Rx_C_t;
 

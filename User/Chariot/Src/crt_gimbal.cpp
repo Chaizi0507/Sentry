@@ -78,7 +78,6 @@ float pre_pitch_a = 0.f,pre_pitch_b = 0.f;
 float pre_yaw_b = 0.f,pre_yaw_a = 0.f;
 float last_pitch_a,last_pitch_b,last_yaw_a,last_yaw_b,last_yaw_main;
 float ang = 0.0f,ome = 0.f;
-float test_angle = 0.f;
 void Class_Gimbal::Output()
 {
     if (Gimbal_Control_Type == Gimbal_Control_Type_DISABLE)
@@ -632,6 +631,7 @@ void Class_Gimbal::Pitch_Angle_Transform_B()
             temp_pitch -= 360.0f;
     }
     Set_True_Angle_Pitch_B(IMU_Data_B.Pitch);
+
     Motor_Pitch_B.Set_Transform_Angle(Get_True_Angle_Pitch_B());
     Motor_Pitch_B.Set_Transform_Omega(IMU_Data_B.Omega_Y);
     Motor_Pitch_B.Set_Transform_Torque(-Motor_Pitch_B.Get_Now_Torque());

@@ -169,6 +169,8 @@ void Class_MiniPC::Output()
   Data_MCU_To_NUC.Self_Base_HP                   = CAN3_Chassis_Rx_Data_B.self_base_HP;   
   Data_MCU_To_NUC.Color_Invincible_State         = CAN3_Chassis_Rx_Data_A.color_invincible_state << 7 | CAN3_Chassis_Rx_Data_A.color_invincible_state << 5;
   Data_MCU_To_NUC.Projectile_allowance           = CAN3_Chassis_Rx_Data_B.projectile_allowance_17mm;
+  Data_MCU_To_NUC.Remaining_Energy               = CAN3_Chassis_Rx_Data_C.Remaining_Energy;
+  Data_MCU_To_NUC.Supercap_Proportion            = CAN3_Chassis_Rx_Data_C.Supercap_Proportion;
   // 有发送优先级版本，暂时停用(测试过，可用)
   // if(CAN3_Chassis_Rx_Data_D.Hero_Position_X != 0 || CAN3_Chassis_Rx_Data_D.Hero_Position_Y != 0)
   // {
@@ -255,6 +257,8 @@ void Class_MiniPC::Output()
   Tx_D.Robot_Position_X         = Data_MCU_To_NUC.Robot_Position_X;
   Tx_D.Robot_Position_Y         = Data_MCU_To_NUC.Robot_Position_Y;
   Tx_D.Game_process             = Data_MCU_To_NUC.Game_process;  
+  Tx_D.Remaining_Energy         = Data_MCU_To_NUC.Remaining_Energy;
+  Tx_D.Supercap_Proportion      = Data_MCU_To_NUC.Supercap_Proportion;
   memcpy(CAN3_MiniPC_Tx_Data_A, &Tx_A, sizeof(MiniPC_Tx_A_t));
   memcpy(CAN3_MiniPC_Tx_Data_B, &Tx_B, sizeof(MiniPC_Tx_B_t));
   memcpy(CAN3_MiniPC_Tx_Data_C, &Tx_C, sizeof(MiniPC_Tx_C_t));

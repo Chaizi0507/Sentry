@@ -387,6 +387,7 @@ void Class_Tricycle_Chassis::TIM_Calculate_PeriodElapsedCallback(Enum_Sprint_Sta
     /*************************功率限制策略*******************************/
     //Power_Limit_Update();
     Power_Limit.Set_Motor(Motor_Wheel);//添加四个电机的控制电流和当前转速
+    Power_Limit.Set_Power_Limit(Referee->Get_Chassis_Power());
     Power_Limit.Set_Chassis_Buffer(Referee->Get_Chassis_Energy_Buffer());
     Power_Limit.TIM_Adjust_PeriodElapsedCallback(Motor_Wheel);
     #endif
