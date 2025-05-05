@@ -34,7 +34,7 @@ void Class_Gimbal::Init()
 
     // yaw轴电机
     Motor_Yaw_A.PID_Angle.Init(30.f, 0.0f, 0.0f, 0.0f, 500, 500);
-    Motor_Yaw_A.PID_Omega.Init(60.0f, 10.0f, 0.0f, 0.0f, 6000, Motor_Yaw_A.Get_Output_Max(), 10.f, 50.f);
+    Motor_Yaw_A.PID_Omega.Init(60.0f, 15.0f, 0.0f, 0.0f, 6000, Motor_Yaw_A.Get_Output_Max(), 10.f, 50.f);
     Motor_Yaw_A.PID_Torque.Init(0.f, 0.0f, 0.0f, 0.0f, Motor_Yaw_A.Get_Output_Max(), Motor_Yaw_A.Get_Output_Max());
     Motor_Yaw_A.Init(&hfdcan2, DJI_Motor_ID_0x205, DJI_Motor_Control_Method_ANGLE, 2048);
 
@@ -420,7 +420,7 @@ void Class_Gimbal::Output()
             if(yaw_omega != 0)
             {
                 Motor_Main_Yaw.Set_LK_Motor_Control_Method(LK_Motor_Control_Method_OMEGA);
-                Motor_Main_Yaw.Set_Target_Omega_Angle(float(MiniPC->Get_Gimbal_Angular_Velocity_Yaw_Main()/100.f));
+                Motor_Main_Yaw.Set_Target_Omega_Angle(float(MiniPC->Get_Gimbal_Angular_Velocity_Yaw_Main() / 100.f));
                 pre_angle_main = Boardc_BMI.Get_Angle_Yaw();
             }
             else if(yaw_omega == 0)
@@ -712,6 +712,8 @@ void Class_Gimbal::PID_Update()
 }
 int A_limit_flag = 0,B_limit_flag = 0;
 float temp_pre_omega_a, temp_pre_omega_b;
+volatile int Main_Yaw_Flag = 0;
+
 void Class_Gimbal::Limit_Update()
 {
     if(Get_True_Angle_Yaw_A() > -90.f && Get_True_Angle_Yaw_A() < -25.5f)
@@ -770,6 +772,53 @@ void Class_Gimbal::Limit_Update()
             Motor_Yaw_B.Set_DJI_Motor_Control_Method(DJI_Motor_Control_Method_OMEGA);
             Motor_Yaw_B.Set_Target_Omega_Angle(temp_pre_omega_b);
         }
+    }
+    static uint32_t gyro_over_time = 0;
+    // if (abs(Boardc_BMI.Get_Gyro_Yaw()) > 15.f)
+    // {
+    //     gyro_over_time++;
+    // }
+    // else
+    // {
+    //     gyro_over_time = 0;
+    // }
+    // if(gyro_over_time > 500 || Motor_Main_Yaw.Get_LK_Motor_Status() == LK_Motor_Status_DISABLE)
+    // {
+    //     Motor_Main_Yaw.Set_LK_Motor_Control_Method(LK_Motor_Control_Method_TORQUE);
+    //     Motor_Main_Yaw.PID_Angle.Set_Integral_Error(0.0f);
+    //     Motor_Main_Yaw.PID_Omega.Set_Integral_Error(0.0f);
+    //     Motor_Main_Yaw.PID_Torque.Set_Integral_Error(0.0f);
+    //     Motor_Main_Yaw.Set_Target_Torque(0.f);
+    //     Motor_Main_Yaw.Set_Out(0.0f);
+    //     Main_Yaw_Flag = 1;
+    // }
+    // if(Main_Yaw_Flag == 1 && Motor_Main_Yaw.Get_LK_Motor_Status() == LK_Motor_Status_ENABLE)
+    // {
+    //     Motor_Main_Yaw.Set_LK_Motor_Control_Method(LK_Motor_Control_Method_OMEGA);
+    //     Motor_Main_Yaw.Set_Target_Omega_Angle(1.5f);
+    //     if(Boardc_BMI.Get_Angle_Yaw() < 5.f && Boardc_BMI.Get_Angle_Yaw() > -5.f)
+    //     {
+    //         Motor_Main_Yaw.Set_LK_Motor_Control_Method(LK_Motor_Control_Method_ANGLE);
+    //         Set_Target_Yaw_Angle(0.f);
+    //         Main_Yaw_Flag = 0;
+    //     }
+    // }
+    if (Motor_Main_Yaw.Get_LK_Motor_Status() == LK_Motor_Status_DISABLE)
+    {
+        gyro_over_time++;
+    }
+    else
+    {
+        gyro_over_time = 0;
+    }
+    if(gyro_over_time > 200 && Motor_Main_Yaw.Get_LK_Motor_Status() == LK_Motor_Status_DISABLE)
+    {
+        Motor_Main_Yaw.Set_LK_Motor_Control_Method(LK_Motor_Control_Method_TORQUE);
+        Motor_Main_Yaw.PID_Angle.Set_Integral_Error(0.0f);
+        Motor_Main_Yaw.PID_Omega.Set_Integral_Error(0.0f);
+        Motor_Main_Yaw.PID_Torque.Set_Integral_Error(0.0f);
+        Motor_Main_Yaw.Set_Target_Torque(0.f);
+        Motor_Main_Yaw.Set_Out(0.0f);
     }
 }
 

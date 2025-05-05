@@ -149,7 +149,9 @@ extern Referee_Rx_A_t CAN3_Chassis_Rx_Data_A;
 extern Referee_Rx_B_t CAN3_Chassis_Rx_Data_B;
 extern Referee_Rx_C_t CAN3_Chassis_Rx_Data_C;
 extern Referee_Rx_D_t CAN3_Chassis_Rx_Data_D;
+extern Referee_Rx_E_t CAN3_Chassis_Rx_Data_E;
 extern Referee_Rx_F_t CAN3_Chassis_Rx_Data_F;
+extern Referee_Rx_G_t CAN3_Chassis_Rx_Data_G;
 volatile int index = 0;
 void Class_MiniPC::Output()
 {
@@ -171,6 +173,8 @@ void Class_MiniPC::Output()
   Data_MCU_To_NUC.Projectile_allowance           = CAN3_Chassis_Rx_Data_B.projectile_allowance_17mm;
   Data_MCU_To_NUC.Remaining_Energy               = CAN3_Chassis_Rx_Data_C.Remaining_Energy;
   Data_MCU_To_NUC.Supercap_Proportion            = CAN3_Chassis_Rx_Data_C.Supercap_Proportion;
+  Data_MCU_To_NUC.Target_Position_X              = CAN3_Chassis_Rx_Data_G.Target_Position_X;
+  Data_MCU_To_NUC.Target_Position_Y              = CAN3_Chassis_Rx_Data_G.Target_Position_Y;
   // 有发送优先级版本，暂时停用(测试过，可用)
   // if(CAN3_Chassis_Rx_Data_D.Hero_Position_X != 0 || CAN3_Chassis_Rx_Data_D.Hero_Position_Y != 0)
   // {
@@ -438,18 +442,18 @@ float Class_MiniPC::calc_distance(float x, float y, float z)
  * @param z 向量的z分量
  * @return 计算得到的俯仰角（以角度制表示）
  */
-extern Referee_Rx_E_t CAN3_Chassis_Rx_Data_E;
+//extern Referee_Rx_E_t CAN3_Chassis_Rx_Data_E;
 float Class_MiniPC::calc_pitch(float x, float y, float z, Enum_Booster_Type Booster_Type) 
 {
   // 根据 x、y 分量计算的平面投影的模长和 z 分量计算的反正切值，得到弧度制的俯仰角
   float pitch = atan2f(z, sqrtf(x * x + y * y));
   // if(Booster_Type == Booster_Type_A)
   // {
-  //   bullet_v = CAN3_Chassis_Rx_Data_E.Bullet_Speed_A;
+  //   bullet_v = (float)(CAN3_Chassis_Rx_Data_E.Bullet_Speed_A * 100.f);
   // }
   // else if(Booster_Type == Booster_Type_B)
   // {
-  //   bullet_v = CAN3_Chassis_Rx_Data_E.Bullet_Speed_B;
+  //   bullet_v = (float)(CAN3_Chassis_Rx_Data_E.Bullet_Speed_B * 100.f);
   // }
   //使用重力加速度模型迭代更新俯仰角
   for (size_t i = 0; i < 20; i++) {

@@ -310,6 +310,7 @@ void Class_Booster::Output()
             // {
             //     Motor_Driver.Set_Target_Omega_Radian(0.0f);
             // }
+            Cooling_Value = CAN3_Chassis_Rx_Data_B.cooling_value;
             if(shoot_time == 0)
             {
                 ShootTime = ((Heat_Max - Heat) + 2 * Cooling_Value) * 10;

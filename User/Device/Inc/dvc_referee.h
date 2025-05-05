@@ -860,7 +860,7 @@ struct Struct_Referee_Rx_Data_Robot_Position
 struct Struct_Referee_Rx_Data_Robot_Buff
 {
     uint8_t HP_Recovery_Buff_Rate ;
-    uint8_t Booster_Cooling_Buff_Rate ;
+    uint8_t Booster_Cooling_Buff_Rate ; 
     uint8_t Defend_Buff_Rate ; //机器人防御增益（百分比，值为 50 表示 50%防御增益）
     uint8_t Vulnerability_Buff_Rate; //机器人负防御增益（百分比，值为 30 表示-30%防御增益）
     uint16_t Damage_Buff_Rate ; //机器人攻击增益（百分比，值为 50 表示 50%攻击增益）
@@ -1108,10 +1108,10 @@ struct Struct_Referee_Tx_Data_Interaction_Radar_Send
 {
     float Coordinate_X;
     float Coordinate_Y;
-    float Coordinate_Z;
     uint8_t Keyboard;
     Enum_Referee_Data_Robots_ID Robot_ID;
-    uint8_t Reserved;
+    uint16_t cmd_source;
+    uint16_t CRC_16;
 } __attribute__((packed));
 
 /**
@@ -1197,7 +1197,7 @@ struct Struct_Sentry_To_Radar_t
     uint16_t Robot_Position_Y;
 } __attribute__((packed));
 
-struct Struct_CAN_Referee_Rx_Data_t //0x95
+struct Struct_CAN_Referee_Rx_Data_t //0x195
 {
     uint32_t Sentry_cmd;
     uint16_t Robot_Position_X;
@@ -1329,6 +1329,7 @@ public:
 
     void UART_RxCpltCallback(uint8_t *Rx_Data, uint16_t Size);
     void TIM_UART_Tx_PeriodElapsedCallback();
+    void Sentry_Auto_cmd_Transmit();
     void TIM1msMod50_Alive_PeriodElapsedCallback();
 
 protected:
@@ -2300,25 +2301,25 @@ uint16_t Class_Referee::Get_Dart_Last_Confirm_Timestamp()
 //     return (Interaction_Client_Receive.Robot_ID);
 // }
 
-// /**
-//  * @brief 获取雷达发送目标机器人位置x
-//  *
-//  * @return float 雷达发送目标机器人位置x
-//  */
-// float Class_Referee::Get_Radar_Send_Coordinate_X()
-// {
-//     return (Interaction_Client_Receive.Coordinate_X);
-// }
+/**
+ * @brief 获取雷达发送目标机器人位置x
+ *
+ * @return float 雷达发送目标机器人位置x
+ */
+float Class_Referee::Get_Radar_Send_Coordinate_X()
+{
+    return (Interaction_Radar_Send.Coordinate_X);
+}
 
-// /**
-//  * @brief 获取雷达发送目标机器人位置y
-//  *
-//  * @return float 雷达发送目标机器人位置y
-//  */
-// float Class_Referee::Get_Radar_Send_Coordinate_Y()
-// {
-//     return (Interaction_Client_Receive.Coordinate_Y);
-// }
+/**
+ * @brief 获取雷达发送目标机器人位置y
+ *
+ * @return float 雷达发送目标机器人位置y
+ */
+float Class_Referee::Get_Radar_Send_Coordinate_Y()
+{
+    return (Interaction_Radar_Send.Coordinate_Y);
+}
 uint16_t Class_Referee::Get_Hero_Position_X()
 {
     return (Interaction_Robot_Receive.hero_position_x);
