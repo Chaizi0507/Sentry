@@ -227,6 +227,7 @@ enum Enum_Referee_Command_ID : uint16_t
     Referee_Command_ID_ROBOT_RFID,
     Referee_Command_ID_ROBOT_DART_COMMAND,
     Referee_Command_ID_ROBOT_Sentry_Info = 0x020D,
+    Referee_Command_ID_ROBOT_Radar_Info = 0x020E,
     Referee_Command_ID_INTERACTION = 0x0301,
     Referee_Command_ID_INTERACTION_CUSTOM_CONTROLLER,
     Referee_Command_ID_INTERACTION_RADAR_SEND,
@@ -432,7 +433,8 @@ enum Enum_Referee_Data_Robot_Dart_Command_Target : uint8_t
 {
     Referee_Data_Robot_Dart_Command_Target_OUTPOST = 0,
     Referee_Data_Robot_Dart_Command_Target_BASE,
-    Referee_Data_Robot_Dart_Command_Target_Randam_BASE
+    Referee_Data_Robot_Dart_Command_Target_Randam_BASE,
+    Referee_Data_Robot_Dart_Command_Target_Randam_Move_BASE,
 };
 
 /**
@@ -798,9 +800,10 @@ struct Struct_Referee_Rx_Data_Event_Referee_Warning
 struct Struct_Referee_Rx_Data_Event_Dart_Remaining_Time
 {
     uint8_t Dart_Remaining_Time;
-    uint16_t Dart_Info : 5;
+    uint8_t  Dart_Recent_Target : 3;
+    uint16_t Dart_Info : 3;
     uint16_t Dart_Target_Enum : 2;
-    uint16_t Reserved : 9;
+    uint16_t Reserved : 8;
     uint16_t CRC_16;
 } __attribute__((packed));
 
@@ -986,6 +989,15 @@ struct Struct_Referee_Rx_Data_Robot_Sentry_Info
     uint16_t CRC_16;
 } __attribute__((packed));
 
+/**
+ * @brief 裁判系统经过处理的数据, 0x020E雷达信息, 10Hz发送
+ *
+ */
+struct Struct_Referee_Rx_Data_Robot_Radar_Info
+{
+    uint8_t radar_info;
+    uint16_t CRC_16;
+} __attribute__((packed));
 /**
  * @brief 裁判系统发送或接收的数据, 0x0301机器人间交互信息, 用户自主发送
  * TODO 视情况启用
@@ -1299,6 +1311,7 @@ public:
     inline uint16_t Get_Sentry_Position_X();
     inline uint16_t Get_Sentry_Position_Y();
     inline uint8_t Get_Energy_Left_Rate();
+    inline uint8_t Get_Radar_Info();
 
     template <typename T>
     void Referee_UI_Packed_Data(T* __data);
@@ -1390,6 +1403,8 @@ protected:
     Struct_Referee_Rx_Data_Robot_RFID Robot_RFID;
     // 哨兵状态信息
     Struct_Referee_Rx_Data_Robot_Sentry_Info Sentry_Info;
+    // 雷达状态信息
+    Struct_Referee_Rx_Data_Robot_Radar_Info Radar_Info;
     //飞镖状态
     Struct_Referee_Rx_Data_Robot_Dart_Command Robot_Dart_Command;
     //敌军位置
@@ -2370,6 +2385,10 @@ uint16_t Class_Referee::Get_Sentry_Position_Y()
 uint8_t Class_Referee::Get_Energy_Left_Rate()
 {
     return (Robot_Buff.Energy_Left_Rate);
+}
+uint8_t Class_Referee::Get_Radar_Info()
+{
+    return (Radar_Info.radar_info);
 }
 /**
  * @brief 设置机器人ID

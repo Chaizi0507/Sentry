@@ -543,6 +543,27 @@ void Task100us_TIM4_Callback()
         chariot.Gimbal.Boardc_BMI.TIM_Calculate_PeriodElapsedCallback();     
         IMUA_UART7_Callback(UART7_Manage_Object.Rx_Buffer, UART7_Manage_Object.Rx_Length);
         IMUB_USART1_Callback(UART1_Manage_Object.Rx_Buffer, UART1_Manage_Object.Rx_Length);
+
+        #ifdef DEBUG
+            if (chariot.DR16.Get_DR16_Status() == DR16_Status_DISABLE)
+            {
+                chariot.Gimbal.Set_Gimbal_Control_Type(Gimbal_Control_Type_DISABLE);
+                chariot.Booster_A.Set_Booster_Control_Type(Booster_Control_Type_DISABLE);
+                chariot.Booster_B.Set_Booster_Control_Type(Booster_Control_Type_DISABLE);
+                chariot.Chassis.Set_Chassis_Control_Type(Chassis_Control_Type_DISABLE);
+            }
+        #else
+        if(CAN3_Chassis_Rx_Data_A.game_process != 4)
+        {
+            if (chariot.DR16.Get_DR16_Status() == DR16_Status_DISABLE)
+            {
+                chariot.Gimbal.Set_Gimbal_Control_Type(Gimbal_Control_Type_DISABLE);
+                chariot.Booster_A.Set_Booster_Control_Type(Booster_Control_Type_DISABLE);
+                chariot.Booster_B.Set_Booster_Control_Type(Booster_Control_Type_DISABLE);
+                chariot.Chassis.Set_Chassis_Control_Type(Chassis_Control_Type_DISABLE);
+            }
+        }
+        #endif
     #endif
 }
 

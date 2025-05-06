@@ -332,6 +332,7 @@ struct Struct_MiniPC_Tx_Data
     uint8_t Supercap_Proportion;
     int16_t Target_Position_X;
     int16_t Target_Position_Y;
+    uint8_t Dart_Target;
     uint16_t crc16;
 } __attribute__((packed));
 
@@ -392,7 +393,8 @@ typedef __packed struct // 0x178
     uint16_t Booster_Heat_B;
     uint8_t  Remaining_Energy;
     uint8_t  Supercap_Proportion;
-    uint16_t reserved;
+    uint8_t  Radar_Info;
+    uint8_t  Dart_Target;
 } Referee_Rx_C_t;
 
 typedef __packed struct // 0x198 
